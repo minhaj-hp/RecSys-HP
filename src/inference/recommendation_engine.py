@@ -22,9 +22,44 @@ class RecommendationEngine:
         self.faiss_index = None
         self.data_processor = None
         self.items_df = None
+        self.income_thresholds = None  # Store income thresholds for categorization
         
         # Load components
         self._load_all_components()
+    
+    def categorize_age(self, age: float) -> int:
+        """Categorize age into 6 demographic groups."""
+        if age < 18:
+            return 0  # Teen
+        elif age < 26:
+            return 1  # Young Adult
+        elif age < 36:
+            return 2  # Adult
+        elif age < 51:
+            return 3  # Middle Age
+        elif age < 66:
+            return 4  # Mature
+        else:
+            return 5  # Senior
+    
+    def categorize_income(self, income: float) -> int:
+        """Categorize income based on training set percentiles."""
+        if self.income_thresholds is None:
+            # Default categorization if thresholds not available
+            if income < 30000:
+                return 0
+            elif income < 50000:
+                return 1
+            elif income < 75000:
+                return 2
+            elif income < 100000:
+                return 3
+            else:
+                return 4
+        
+        # Use stored percentile thresholds from training
+        category = np.digitize([income], self.income_thresholds[1:-1])[0]
+        return min(max(category, 0), 4)
     
     def _load_all_components(self):
         """Load all required components for inference."""
@@ -99,31 +134,35 @@ class RecommendationEngine:
             dropout_rate=0.2
         )
         
-        # Build user tower with dummy input
+        # Build user tower with dummy categorical input
         dummy_input = {
-            'age': tf.constant([30.0]),
-            'gender': tf.constant([1]),
-            'income': tf.constant([50000.0]),
+            'age': tf.constant([2]),  # Adult category (26-35)
+            'gender': tf.constant([1]),  # Male
+            'income': tf.constant([2]),  # Middle income category
             'item_history_embeddings': tf.constant([[[0.0] * 64] * 50])
         }
         _ = self.user_tower(dummy_input)
         
         # Adapt normalization layers with training data
         try:
+            # Load training data to get income thresholds for categorization
             import pickle
             with open(f"{self.artifacts_path}/training_features.pkl", 'rb') as f:
                 training_features = pickle.load(f)
             
-            # Adapt age and income normalization
-            self.user_tower.age_normalization.adapt(
-                np.array(training_features['age']).reshape(-1, 1)
-            )
-            self.user_tower.income_normalization.adapt(
-                np.array(training_features['income']).reshape(-1, 1)
-            )
-            print("Adapted normalization layers")
+            # Note: Training features now contain categorical age/income
+            # If we need raw values for threshold calculation, load from original users data
+            try:
+                users_df = pd.read_csv("datasets/users.csv")
+                percentiles = [0, 20, 40, 60, 80, 100]
+                self.income_thresholds = np.percentile(users_df['income'], percentiles)
+                print(f"Loaded income thresholds: {self.income_thresholds}")
+            except Exception as e:
+                print(f"Warning: Could not load income thresholds: {e}")
+            
+            print("Using categorical age and income features")
         except Exception as e:
-            print(f"Warning: Could not adapt normalization layers: {e}")
+            print(f"Warning: Could not load training features: {e}")
         
         try:
             self.user_tower.load_weights(f"{self.artifacts_path}/user_tower_weights_best")
@@ -165,6 +204,10 @@ class RecommendationEngine:
         # Convert gender
         gender_numeric = 1 if gender.lower() == 'male' else 0
         
+        # Categorize age and income
+        age_category = self.categorize_age(age)
+        income_category = self.categorize_income(income)
+        
         # Get item embeddings for history
         history_embeddings = []
         for item_id in interaction_history:
@@ -185,11 +228,11 @@ class RecommendationEngine:
         
         history_embeddings = np.array(history_embeddings, dtype=np.float32)
         
-        # Prepare features
+        # Prepare features with categorical demographics
         user_features = {
-            'age': tf.constant([float(age)]),
-            'gender': tf.constant([gender_numeric]),
-            'income': tf.constant([float(income)]),
+            'age': tf.constant([age_category]),  # Categorical age (0-5)
+            'gender': tf.constant([gender_numeric]),  # Categorical gender (0-1)
+            'income': tf.constant([income_category]),  # Categorical income (0-4)
             'item_history_embeddings': tf.constant([history_embeddings])
         }
         

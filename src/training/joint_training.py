@@ -200,9 +200,7 @@ class JointTrainer:
         train_dataset = create_tf_dataset(training_features, batch_size)
         val_dataset = create_tf_dataset(validation_features, batch_size)
         
-        # Initialize age and income normalizers
-        self.user_tower.age_normalization.adapt(np.array(training_features['age']).reshape(-1, 1))
-        self.user_tower.income_normalization.adapt(np.array(training_features['income']).reshape(-1, 1))
+        # Note: Age and income are now categorical - no normalization needed
         
         # Training history
         history = {

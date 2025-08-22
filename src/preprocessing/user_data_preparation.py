@@ -5,6 +5,7 @@ from typing import Dict, List, Tuple
 from datetime import datetime
 import pickle
 import os
+from functools import lru_cache
 
 from src.preprocessing.data_loader import DataProcessor
 
@@ -15,11 +16,43 @@ class UserDatasetCreator:
     def __init__(self, max_history_length: int = 50):
         self.max_history_length = max_history_length
         self.data_processor = DataProcessor()
+    
+    def categorize_age(self, age: float) -> int:
+        """Categorize age into 6 demographic groups."""
+        if age < 18:
+            return 0  # Teen
+        elif age < 26:
+            return 1  # Young Adult
+        elif age < 36:
+            return 2  # Adult
+        elif age < 51:
+            return 3  # Middle Age
+        elif age < 66:
+            return 4  # Mature
+        else:
+            return 5  # Senior
+    
+    def categorize_income(self, income_series: pd.Series) -> np.ndarray:
+        """Categorize income into 5 percentile-based groups."""
+        # Calculate percentiles
+        percentiles = [0, 20, 40, 60, 80, 100]
+        income_thresholds = np.percentile(income_series, percentiles)
         
+        # Categorize based on percentiles
+        categories = np.digitize(income_series, income_thresholds[1:-1])
+        
+        # Ensure categories are 0-4
+        categories = np.clip(categories, 0, 4)
+        
+        return categories.astype(np.int32)
+        
+    @lru_cache(maxsize=1)
     def load_item_embeddings(self, embeddings_path: str = "src/artifacts/item_embeddings.npy") -> Dict[int, np.ndarray]:
-        """Load pre-trained item embeddings."""
+        """Load pre-trained item embeddings with caching."""
         try:
-            return np.load(embeddings_path, allow_pickle=True).item()
+            embeddings = np.load(embeddings_path, allow_pickle=True).item()
+            print(f"Loaded {len(embeddings)} item embeddings from cache")
+            return embeddings
         except FileNotFoundError:
             print(f"Warning: {embeddings_path} not found. Creating dummy embeddings...")
             # Create dummy embeddings for demo purposes
@@ -27,10 +60,12 @@ class UserDatasetCreator:
             processor = DataProcessor()
             items_df, users_df, interactions_df = processor.load_data()
             
-            dummy_embeddings = {}
-            for item_id in items_df['product_id'].unique():
-                dummy_embeddings[item_id] = np.random.rand(64).astype(np.float32)
+            # Use more efficient random generation
+            num_items = len(items_df['product_id'].unique())
+            item_ids = items_df['product_id'].unique()
+            embedding_matrix = np.random.rand(num_items, 64).astype(np.float32)
             
+            dummy_embeddings = dict(zip(item_ids, embedding_matrix))
             print(f"Created dummy embeddings for {len(dummy_embeddings)} items")
             return dummy_embeddings
     
@@ -42,17 +77,24 @@ class UserDatasetCreator:
         
         user_aggregated_embeddings = {}
         
+        # Use direct dictionary lookup instead of sparse matrix for memory efficiency
+        # This avoids creating a huge array when item IDs are large/sparse
+        
         for user_id, item_history in user_histories.items():
             if not item_history:
-                # No history - use zero embedding
                 user_aggregated_embeddings[user_id] = np.zeros((self.max_history_length, embedding_dim))
                 continue
             
-            # Get embeddings for items in history
+            # FIXED: Convert vocab indices to item IDs for proper embedding lookup
             history_embeddings = []
-            for item_idx in item_history:
-                if item_idx in item_embeddings:
-                    history_embeddings.append(item_embeddings[item_idx])
+            vocab_to_item_id = {vocab_idx: item_id for item_id, vocab_idx in self.data_processor.item_vocab.items()}
+            
+            for vocab_idx in item_history:
+                # Convert vocab index to actual item ID
+                actual_item_id = vocab_to_item_id.get(vocab_idx)
+                
+                if actual_item_id and actual_item_id in item_embeddings:
+                    history_embeddings.append(item_embeddings[actual_item_id])
                 else:
                     # Use zero embedding for unknown items
                     history_embeddings.append(np.zeros(embedding_dim))
@@ -61,11 +103,9 @@ class UserDatasetCreator:
             
             # Pad or truncate to max_history_length
             if len(history_embeddings) < self.max_history_length:
-                # Pad with zeros
                 padding = np.zeros((self.max_history_length - len(history_embeddings), embedding_dim))
                 history_embeddings = np.vstack([padding, history_embeddings])
             else:
-                # Take most recent interactions
                 history_embeddings = history_embeddings[-self.max_history_length:]
             
             user_aggregated_embeddings[user_id] = history_embeddings
@@ -107,22 +147,30 @@ class UserDatasetCreator:
         # Convert gender to numeric (0=female, 1=male)
         user_demographics['gender_numeric'] = (user_demographics['gender'] == 'male').astype(int)
         
+        # Categorize age (6 categories: Teen, Young Adult, Adult, Middle Age, Mature, Senior)
+        user_demographics['age_category'] = user_demographics['age'].apply(self.categorize_age)
+        
+        # Categorize income (5 percentile-based categories)
+        user_demographics['income_category'] = self.categorize_income(user_demographics['income'])
+        
         # Create mapping from user_id to array index
         user_id_to_index = {uid: idx for idx, uid in enumerate(user_demographics['user_id'])}
         
-        # Prepare features
+        # Prepare features with categorical demographics
         user_features = {
             'user_id_to_index': user_id_to_index,  # Add mapping for later use
             'user_ids': user_demographics['user_id'].values,  # Keep original user IDs
-            'age': user_demographics['age'].values.astype(np.float32),
+            'age': user_demographics['age_category'].values.astype(np.int32),  # Categorical age
             'gender': user_demographics['gender_numeric'].values.astype(np.int32),
-            'income': user_demographics['income'].values.astype(np.float32),
+            'income': user_demographics['income_category'].values.astype(np.int32),  # Categorical income
             'item_history_embeddings': np.array([
                 user_aggregated_embeddings[uid] for uid in user_demographics['user_id']
             ]).astype(np.float32)
         }
         
         print(f"Prepared user features for {len(valid_users)} users")
+        print(f"Age categories: {np.unique(user_features['age'], return_counts=True)}")
+        print(f"Income categories: {np.unique(user_features['income'], return_counts=True)}")
         print(f"History embeddings shape: {user_features['item_history_embeddings'].shape}")
         
         return user_features
@@ -273,19 +321,19 @@ def main():
     print("Loading item embeddings...")
     item_embeddings = dataset_creator.load_item_embeddings()
     
-    # Sample data for faster processing during development
-    print("Sampling data for faster processing...")
-    sample_users = users_df.sample(n=min(1000, len(users_df)))
+    # Use full dataset for training with proper validation/test splits
+    print("Using full dataset for training...")
+    sample_users = users_df  # Use all users
     user_ids = set(sample_users['user_id'])
     
-    # Filter interactions to sample users
+    # Filter interactions to users (all users now)
     sample_interactions = interactions_df[interactions_df['user_id'].isin(user_ids)]
     
-    # Filter items to those in sample interactions
+    # Filter items to those in interactions
     item_ids = set(sample_interactions['product_id'])
     sample_items = items_df[items_df['product_id'].isin(item_ids)]
     
-    print(f"Sampled: {len(sample_items)} items, {len(sample_users)} users, {len(sample_interactions)} interactions")
+    print(f"Full dataset: {len(sample_items)} items, {len(sample_users)} users, {len(sample_interactions)} interactions")
     
     # Create temporal split
     print("Creating temporal split...")
@@ -302,14 +350,15 @@ def main():
     print("Saving training dataset...")
     dataset_creator.save_dataset(training_features)
     
-    # Create validation dataset (smaller sample)
+    # Create validation dataset (use reasonable portion for validation)
     print("Creating validation dataset...")
-    val_sample_size = min(1000, len(val_interactions))
-    val_sample = val_interactions.sample(val_sample_size) if val_sample_size > 0 else val_interactions
+    # Use up to 10% of validation interactions or 5000, whichever is smaller
+    val_sample_size = min(5000, max(len(val_interactions) // 10, len(val_interactions)))
+    val_sample = val_interactions.sample(val_sample_size) if val_sample_size > 0 and val_sample_size < len(val_interactions) else val_interactions
     
     val_training_features = dataset_creator.create_training_dataset(
         val_sample, sample_items, sample_users, item_embeddings,
-        negative_samples_per_positive=1  # Even smaller for validation
+        negative_samples_per_positive=1  # Smaller ratio for validation
     )
     
     # Save validation dataset

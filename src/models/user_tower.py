@@ -16,13 +16,20 @@ class UserTower(tf.keras.Model):
         self.embedding_dim = embedding_dim
         self.max_history_length = max_history_length
         
-        # Demographic feature processing
-        self.age_normalization = tf.keras.layers.Normalization(name="age_norm")
-        self.income_normalization = tf.keras.layers.Normalization(name="income_norm")
+        # Demographic embeddings (categorical features)
+        # Age: 6 categories (Teen, Young Adult, Adult, Middle Age, Mature, Senior)
+        self.age_embedding = tf.keras.layers.Embedding(
+            6, embedding_dim // 16, name="age_embedding"
+        )
         
-        # Gender embedding (assuming binary: 0=female, 1=male)
+        # Income: 5 categories (percentile-based)
+        self.income_embedding = tf.keras.layers.Embedding(
+            5, embedding_dim // 16, name="income_embedding"
+        )
+        
+        # Gender: 2 categories (0=female, 1=male)
         self.gender_embedding = tf.keras.layers.Embedding(
-            2, embedding_dim // 4, name="gender_embedding"
+            2, embedding_dim // 16, name="gender_embedding"
         )
         
         # History aggregation layers
@@ -47,15 +54,15 @@ class UserTower(tf.keras.Model):
         
     def call(self, inputs, training=None):
         """Forward pass of the user tower."""
-        age = inputs["age"]
-        gender = inputs["gender"]
-        income = inputs["income"]
+        age = inputs["age"]  # Now categorical (0-5)
+        gender = inputs["gender"]  # Categorical (0-1)
+        income = inputs["income"]  # Now categorical (0-4)
         item_history = inputs["item_history_embeddings"]  # [batch_size, seq_len, emb_dim]
         
-        # Process demographics
-        age_norm = self.age_normalization(tf.expand_dims(age, -1))
-        income_norm = self.income_normalization(tf.expand_dims(income, -1))
-        gender_emb = self.gender_embedding(gender)
+        # Process demographics through embeddings
+        age_emb = self.age_embedding(age)  # [batch_size, embedding_dim//16]
+        income_emb = self.income_embedding(income)  # [batch_size, embedding_dim//16]
+        gender_emb = self.gender_embedding(gender)  # [batch_size, embedding_dim//16]
         
         # Aggregate item history using attention
         # Create attention mask for padding
@@ -74,8 +81,8 @@ class UserTower(tf.keras.Model):
         
         # Combine all features
         combined = tf.concat([
-            age_norm,
-            income_norm,
+            age_emb,
+            income_emb,
             gender_emb,
             history_aggregated
         ], axis=-1)
