@@ -75,7 +75,7 @@ The system implements a sophisticated two-tower neural network architecture opti
 - **Diversity Controls**: Balanced category representation in recommendations
 - **Explanation Generation**: Detailed reasoning for recommendation choices
 
-## 📁 Enhanced Project Structure
+## 📁 Project Structure
 
 ```
 RecSys-HP/
@@ -87,8 +87,9 @@ RecSys-HP/
 ├── 🧠 src/                               # Core ML implementation
 │   ├── models/                           # Neural network architectures
 │   │   ├── item_tower.py                # Original item embedding tower
-│   │   ├── user_tower.py                # Original user tower with categorical demographics
-│   │   └── improved_two_tower.py        # Enhanced two-tower with all improvements
+│   │   ├── user_tower.py                # User tower with categorical demographics
+│   │   ├── enhanced_two_tower.py        # Enhanced two-tower architecture
+│   │   └── improved_two_tower.py        # Advanced two-tower with improvements
 │   │
 │   ├── preprocessing/                    # Data preparation pipeline
 │   │   ├── data_loader.py               # Dataset loading and validation
@@ -99,12 +100,14 @@ RecSys-HP/
 │   │   ├── item_pretraining.py          # Phase 1: Item tower pre-training
 │   │   ├── joint_training.py            # Original joint training
 │   │   ├── optimized_joint_training.py  # Performance-optimized training
+│   │   ├── fast_joint_training.py       # Fast joint training implementation
+│   │   ├── improved_joint_training.py   # Advanced joint training with curriculum learning
 │   │   └── curriculum_trainer.py        # Advanced curriculum learning
 │   │
 │   ├── inference/                        # Production serving components
 │   │   ├── faiss_index.py               # Vector similarity search
 │   │   ├── recommendation_engine.py     # Core inference pipeline
-│   │   └── enhanced_recommendation_engine.py # Category-aware recommendations
+│   │   └── enhanced_recommendation_engine_128d.py # 128D enhanced recommendations
 │   │
 │   ├── utils/                            # Utility functions
 │   │   └── real_user_selector.py        # Real user data selection for testing
@@ -115,22 +118,26 @@ RecSys-HP/
 │       ├── *.pkl                        # Pickled features/vocabularies
 │       └── *.bin                        # FAISS indices
 │
-├── 🌐 api/                               # REST API server
-│   └── main.py                          # FastAPI endpoints with enhanced features
+├── 🌐 API Implementations               # Multiple API options
+│   ├── api/main.py                      # Primary FastAPI server
+│   ├── api_2phase.py                    # 2-phase training API
+│   └── api_joint.py                     # Joint training API
 │
 ├── 💻 frontend/                          # Interactive web interface
 │   ├── src/                             # React components
-│   │   ├── App.js                       # Enhanced application with new features
+│   │   ├── App.js                       # Enhanced application
 │   │   └── *.css                        # Updated styling
 │   ├── public/                          # Static assets
 │   └── package.json                     # Node.js dependencies
 │
-├── 📊 analyze_recommendation_quality.py   # Comprehensive quality analysis
-├── 🚀 train_improved_model.py            # Enhanced model training script
-├── 🔧 run_training_pipeline.py           # Automated training orchestration
-├── 📋 requirements.txt                   # Python dependencies
-├── 🎯 CATEGORICAL_DEMOGRAPHICS_SUMMARY.md # Implementation documentation
-└── 📖 Additional feature documentation    # Analysis and integration summaries
+├── 🚀 Training Scripts                   # Multiple training approaches
+│   ├── run_training_pipeline.py         # Main training orchestration
+│   ├── run_2phase_training.py           # 2-phase training approach
+│   ├── run_joint_training.py            # Joint training approach
+│   └── train_improved_model.py          # Enhanced model training
+│
+├── 📊 analyze_recommendations.py         # Recommendation quality analysis
+└── 📋 requirements.txt                   # Python dependencies
 ```
 
 ## 🚀 Quick Start Guide
@@ -159,16 +166,30 @@ cd frontend && npm install && cd ..
 
 ### 2. Training Options
 
-#### Option A: Enhanced Model Training (Recommended) 🌟
+Choose from multiple training approaches based on your needs:
+
+#### Option A: Main Training Pipeline (Recommended) 🌟
+```bash
+# Complete end-to-end training pipeline (20-30 minutes)
+python run_training_pipeline.py
+```
+
+#### Option B: Enhanced Model Training
 ```bash
 # Train improved model with categorical demographics and curriculum learning
 python train_improved_model.py --embedding-dim 128 --epochs-per-stage 15
 ```
 
-#### Option B: Standard Training Pipeline
+#### Option C: 2-Phase Training Approach
 ```bash
-# Run original end-to-end training (20-30 minutes)
-python run_training_pipeline.py
+# 2-phase training: item pretraining + joint optimization
+python run_2phase_training.py
+```
+
+#### Option D: Joint Training Approach  
+```bash
+# Direct joint training of both towers
+python run_joint_training.py
 ```
 
 **Enhanced Training Features:**
@@ -179,10 +200,23 @@ python run_training_pipeline.py
 5. **Enhanced Evaluation** → Comprehensive quality metrics
 
 ### 3. Start Interactive Demo 🎮
+
+Choose your preferred API implementation:
+
+#### Primary API (Recommended)
 ```bash
-# Launch API server + React frontend
+# Launch main API server + React frontend
 cd api && python main.py &
 cd frontend && npm start
+```
+
+#### Alternative API Options
+```bash
+# 2-Phase Training API
+python api_2phase.py &
+
+# Joint Training API  
+python api_joint.py &
 ```
 
 **Access Points:**
@@ -193,7 +227,7 @@ cd frontend && npm start
 ### 4. Quality Analysis 📊
 ```bash
 # Run comprehensive recommendation analysis
-python analyze_recommendation_quality.py
+python analyze_recommendations.py
 ```
 
 ## 🎯 Enhanced Recommendation Strategies
@@ -336,13 +370,13 @@ recommendations = response.json()
 
 ### Enhanced Testing & Analysis
 ```bash
-# Test enhanced recommendation engine
-python -m src.inference.enhanced_recommendation_engine
+# Test enhanced recommendation engine (128D)
+python -m src.inference.enhanced_recommendation_engine_128d
 
 # Run comprehensive quality analysis
-python analyze_recommendation_quality.py
+python analyze_recommendations.py
 
-# Test categorical demographics functionality
+# Test standard recommendation functionality
 python -m src.inference.recommendation_engine
 ```
 
@@ -409,8 +443,23 @@ python train_improved_model.py --curriculum-stages 4 --epochs-per-stage 12
 
 **🎉 Ready to deliver next-generation personalized recommendations!**
 
-For detailed implementation information, see the additional documentation files:
-- `CATEGORICAL_DEMOGRAPHICS_SUMMARY.md` - Categorical demographics implementation
-- Project analysis and feature summaries for comprehensive understanding
+## 🗂️ Available Training Approaches
 
-For questions, issues, or contributions, please refer to the project documentation or create an issue in the repository.
+This project provides multiple training strategies:
+
+1. **Main Pipeline** (`run_training_pipeline.py`) - Complete orchestrated training
+2. **2-Phase Training** (`run_2phase_training.py`) - Item pretraining + joint optimization  
+3. **Joint Training** (`run_joint_training.py`) - Direct joint training approach
+4. **Enhanced Training** (`train_improved_model.py`) - Advanced features with curriculum learning
+
+## 🔌 API Options
+
+- **Primary API** (`api/main.py`) - Full-featured FastAPI server
+- **2-Phase API** (`api_2phase.py`) - Specialized for 2-phase training
+- **Joint API** (`api_joint.py`) - Optimized for joint training approach
+
+## 📊 Analysis Tools
+
+- **Recommendation Analysis** (`analyze_recommendations.py`) - Quality metrics and evaluation
+
+For questions, issues, or contributions, please create an issue in the repository.
