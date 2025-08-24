@@ -129,8 +129,8 @@ class RecommendationEngine:
         
         self.user_tower = UserTower(
             max_history_length=50,
-            embedding_dim=64,
-            hidden_dims=[128, 64],
+            embedding_dim=128,  # Changed from 64 to 128
+            hidden_dims=[128, 64],  # Match training architecture
             dropout_rate=0.2
         )
         
@@ -139,7 +139,7 @@ class RecommendationEngine:
             'age': tf.constant([2]),  # Adult category (26-35)
             'gender': tf.constant([1]),  # Male
             'income': tf.constant([2]),  # Middle income category
-            'item_history_embeddings': tf.constant([[[0.0] * 64] * 50])
+            'item_history_embeddings': tf.constant([[[0.0] * 128] * 50])  # Changed from 64 to 128
         }
         _ = self.user_tower(dummy_input)
         
@@ -182,7 +182,7 @@ class RecommendationEngine:
         ])
         
         # Build model with dummy input (concatenated user and item embeddings)
-        dummy_input = tf.constant([[0.0] * 128])  # 64 + 64 = 128
+        dummy_input = tf.constant([[0.0] * 256])  # 128 + 128 = 256
         _ = self.rating_model(dummy_input)
         
         try:
@@ -216,14 +216,16 @@ class RecommendationEngine:
                 history_embeddings.append(embedding)
             else:
                 # Use zero embedding for unknown items
-                history_embeddings.append(np.zeros(64))
+                history_embeddings.append(np.zeros(128))  # Changed from 64 to 128
         
         # Pad or truncate to max_history_length
         max_history_length = 50
         if len(history_embeddings) < max_history_length:
-            padding = [np.zeros(64)] * (max_history_length - len(history_embeddings))
-            history_embeddings = padding + history_embeddings
+            # Add padding at the END so real interactions are at the BEGINNING
+            padding = [np.zeros(128)] * (max_history_length - len(history_embeddings))
+            history_embeddings = history_embeddings + padding
         else:
+            # Keep most recent interactions
             history_embeddings = history_embeddings[-max_history_length:]
         
         history_embeddings = np.array(history_embeddings, dtype=np.float32)
@@ -301,27 +303,52 @@ class RecommendationEngine:
                                    income: float,
                                    interaction_history: List[int] = None,
                                    k: int = 10,
-                                   exclude_history: bool = True) -> List[Tuple[int, float, Dict]]:
-        """Generate recommendations using collaborative filtering (user-item similarity)."""
+                                   exclude_history: bool = True,
+                                   category_boost: float = 1.3) -> List[Tuple[int, float, Dict]]:
+        """Generate recommendations using collaborative filtering with category awareness."""
         
         # Get user embedding
         user_embedding = self.get_user_embedding(age, gender, income, interaction_history)
         
-        # Find similar items using FAISS
-        similar_items = self.faiss_index.search_by_embedding(user_embedding, k * 2)
+        # Find similar items using FAISS (get more candidates for boosting)
+        similar_items = self.faiss_index.search_by_embedding(user_embedding, k * 4)
         
-        # Filter out interaction history if requested
-        if exclude_history and interaction_history:
-            history_set = set(interaction_history)
-            similar_items = [(item_id, score) for item_id, score in similar_items 
-                           if item_id not in history_set]
+        # Get user's preferred categories from interaction history
+        user_categories = set()
+        if interaction_history:
+            for item_id in interaction_history[-10:]:  # Focus on recent interactions
+                item_row = self.items_df[self.items_df['product_id'] == item_id]
+                if len(item_row) > 0:
+                    user_categories.add(item_row.iloc[0]['category_code'])
         
-        # Take top k
-        similar_items = similar_items[:k]
+        # Filter out interaction history and apply category boosting
+        boosted_items = []
+        history_set = set(interaction_history) if (exclude_history and interaction_history) else set()
+        
+        for item_id, score in similar_items:
+            if item_id in history_set:
+                continue
+                
+            # Get item category
+            item_row = self.items_df[self.items_df['product_id'] == item_id]
+            if len(item_row) > 0:
+                item_category = item_row.iloc[0]['category_code']
+                
+                # Boost score if item is in user's preferred categories
+                if item_category in user_categories:
+                    boosted_score = score * category_boost
+                else:
+                    boosted_score = score
+                
+                boosted_items.append((item_id, boosted_score))
+        
+        # Sort by boosted score and take top k
+        boosted_items.sort(key=lambda x: x[1], reverse=True)
+        boosted_items = boosted_items[:k]
         
         # Add item metadata
         recommendations = []
-        for item_id, score in similar_items:
+        for item_id, score in boosted_items:
             item_info = self._get_item_info(item_id)
             recommendations.append((item_id, score, item_info))
         

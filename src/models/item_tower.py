@@ -10,8 +10,8 @@ class ItemTower(tf.keras.Model):
                  item_vocab_size: int,
                  category_vocab_size: int,
                  brand_vocab_size: int,
-                 embedding_dim: int = 64,
-                 hidden_dims: list = [128, 64],
+                 embedding_dim: int = 128,  # Output embedding dimension
+                 hidden_dims: list = [256, 128],  # Internal dims can be larger
                  dropout_rate: float = 0.2):
         super().__init__()
         

@@ -66,7 +66,7 @@ class FastJointTrainer:
         # Build user tower (simplified)
         self.user_tower = UserTower(
             max_history_length=50,
-            embedding_dim=64,
+            embedding_dim=128,  # Updated to 128D
             hidden_dims=[64],  # Simplified architecture
             dropout_rate=0.1
         )

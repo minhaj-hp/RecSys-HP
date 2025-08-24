@@ -194,3 +194,31 @@ data/
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+# Analysis and debug files
+debug_*.py
+test_*.py
+analyze_enhanced_*.py
+analyze_recommendation_quality.py
+*_analysis_*
+*_report.*
+simple_*.py
+
+# Keep analyze_recommendations.py - it's wanted
+!analyze_recommendations.py
+
+# Backup directories
+*_backup/
+*_bak/
+artifacts_backup/
+
+# Temporary files
+*.tmp
+*.temp
+*.cache
+
+# Configuration files with sensitive data
+config.json
+secrets.json
+.secret
+.key

@@ -8,8 +8,8 @@ class UserTower(tf.keras.Model):
     
     def __init__(self,
                  max_history_length: int = 50,
-                 embedding_dim: int = 64,
-                 hidden_dims: list = [128, 64],
+                 embedding_dim: int = 128,  # Output embedding dimension
+                 hidden_dims: list = [256, 128],  # Internal dims for processing
                  dropout_rate: float = 0.2):
         super().__init__()
         

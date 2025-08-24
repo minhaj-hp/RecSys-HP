@@ -13,7 +13,7 @@ class JointTrainer:
     """Handles joint training of user and item towers."""
     
     def __init__(self,
-                 embedding_dim: int = 64,
+                 embedding_dim: int = 128,  # Updated to 128D output
                  user_learning_rate: float = 0.001,
                  item_learning_rate: float = 0.0001,  # Lower LR for pre-trained item tower
                  rating_weight: float = 1.0,
@@ -330,7 +330,7 @@ def main():
     
     # Initialize trainer
     trainer = JointTrainer(
-        embedding_dim=64,
+        embedding_dim=128,  # Updated to 128D
         user_learning_rate=0.001,
         item_learning_rate=0.0001,
         rating_weight=1.0,

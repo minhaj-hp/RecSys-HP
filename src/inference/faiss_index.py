@@ -8,7 +8,7 @@ from typing import Dict, List, Tuple, Optional
 class FAISSItemIndex:
     """FAISS-based item similarity search index."""
     
-    def __init__(self, embedding_dim: int = 64):
+    def __init__(self, embedding_dim: int = 128):
         self.embedding_dim = embedding_dim
         self.index = None
         self.item_id_to_idx = {}
@@ -40,14 +40,10 @@ class FAISSItemIndex:
             # Exact search (slower but accurate)
             self.index = faiss.IndexFlatIP(self.embedding_dim)
         elif index_type == "IVF":
-            # Approximate search (faster)
-            nlist = min(100, len(item_ids) // 10)  # Number of clusters
-            quantizer = faiss.IndexFlatIP(self.embedding_dim)
-            self.index = faiss.IndexIVFFlat(quantizer, self.embedding_dim, nlist)
-            
-            # Train the index
-            self.index.train(embeddings_array)
-            self.index.nprobe = min(10, nlist)  # Search in top 10 clusters
+            # For CPU use exact search (IndexFlatIP) for better accuracy
+            # IVF is mainly beneficial for GPU, for CPU stick with exact search
+            print("Using IndexFlatIP for CPU (exact search)")
+            self.index = faiss.IndexFlatIP(self.embedding_dim)
         else:
             raise ValueError(f"Unsupported index type: {index_type}")
         
@@ -134,6 +130,7 @@ class FAISSItemIndex:
             sample_queries = list(self.item_id_to_idx.keys())[:5]
         
         print("Validating FAISS index...")
+        print("Note: Higher similarity scores = more similar items (cosine similarity)")
         
         for query_item in sample_queries:
             if query_item not in self.item_id_to_idx:
@@ -141,9 +138,16 @@ class FAISSItemIndex:
                 
             similar_items = self.search_similar_items(query_item, k=5)
             
-            print(f"\nSimilar items to {query_item}:")
-            for item_id, score in similar_items:
-                print(f"  Item {item_id}: similarity = {score:.4f}")
+            print(f"\nSimilar items to {query_item} (sorted by similarity DESC):")
+            for i, (item_id, score) in enumerate(similar_items):
+                print(f"  #{i+1} Item {item_id}: similarity = {score:.4f}")
+                
+            # Check if scores are properly ordered (descending)
+            scores = [score for _, score in similar_items]
+            if len(scores) > 1 and not all(scores[i] >= scores[i+1] for i in range(len(scores)-1)):
+                print(f"  WARNING: Scores not in descending order! {scores}")
+            else:
+                print(f"  ✓ Scores properly ordered (most to least similar)")
     
     def save_index(self, save_path: str = "src/artifacts/") -> None:
         """Save FAISS index and mappings."""
@@ -197,7 +201,7 @@ def main():
     
     # Create and build FAISS index
     print("Building FAISS index...")
-    faiss_index = FAISSItemIndex(embedding_dim=64)
+    faiss_index = FAISSItemIndex(embedding_dim=128)
     faiss_index.build_index(item_embeddings, index_type="IVF")
     
     # Validate index

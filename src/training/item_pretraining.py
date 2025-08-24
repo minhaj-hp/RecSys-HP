@@ -12,8 +12,8 @@ class ItemTowerPretrainer:
     """Handles pre-training of the item tower."""
     
     def __init__(self, 
-                 embedding_dim: int = 64,
-                 hidden_dims: List[int] = [128, 64],
+                 embedding_dim: int = 128,  # Updated to 128D output
+                 hidden_dims: List[int] = [256, 128],  # Scaled up
                  dropout_rate: float = 0.2,
                  learning_rate: float = 0.001):
         
@@ -111,19 +111,26 @@ class ItemTowerPretrainer:
         return history
     
     def generate_item_embeddings(self, 
-                                dataset: tf.data.Dataset) -> Dict[int, np.ndarray]:
+                                dataset: tf.data.Dataset,
+                                data_processor: 'DataProcessor') -> Dict[int, np.ndarray]:
         """Generate embeddings for all items in the catalog."""
         
         item_embeddings = {}
         
+        # Create reverse mapping from vocab indices to actual item IDs
+        idx_to_item_id = {idx: item_id for item_id, idx in data_processor.item_vocab.items()}
+        
         for batch in dataset:
             embeddings = self.item_tower(batch)
-            product_ids = batch['product_id'].numpy()
+            product_idx_batch = batch['product_id'].numpy()
             
-            for i, product_id in enumerate(product_ids):
-                item_embeddings[product_id] = embeddings[i].numpy()
+            for i, product_idx in enumerate(product_idx_batch):
+                # Convert vocab index back to actual item ID
+                actual_item_id = idx_to_item_id.get(product_idx, product_idx)
+                item_embeddings[actual_item_id] = embeddings[i].numpy()
         
         print(f"Generated embeddings for {len(item_embeddings)} items")
+        print(f"Sample item IDs: {list(item_embeddings.keys())[:5]}")
         return item_embeddings
     
     def save_model(self, save_path: str = "src/artifacts/"):
@@ -185,7 +192,7 @@ def main():
     # Initialize components
     data_processor = DataProcessor()
     pretrainer = ItemTowerPretrainer(
-        embedding_dim=64,
+        embedding_dim=128,  # Updated to 128D
         hidden_dims=[128, 64],
         dropout_rate=0.2,
         learning_rate=0.001
@@ -210,7 +217,7 @@ def main():
     
     # Generate embeddings
     print("Generating item embeddings...")
-    item_embeddings = pretrainer.generate_item_embeddings(dataset)
+    item_embeddings = pretrainer.generate_item_embeddings(dataset, data_processor)
     
     # Save everything
     print("Saving artifacts...")

@@ -1,3 +1,17 @@
+#!/usr/bin/env python3
+"""
+API for 2-Phase Trained Recommendation System
+
+This API serves recommendations from a model trained using the 2-phase approach:
+1. Pre-trained item tower
+2. Joint training with fine-tuned item tower
+
+Usage:
+    python api_2phase.py
+    
+Then access: http://localhost:8000
+"""
+
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -8,7 +22,7 @@ import sys
 import pandas as pd
 
 # Add src to path for imports and set working directory
-parent_dir = os.path.dirname(os.path.dirname(__file__))
+parent_dir = os.path.dirname(__file__)
 sys.path.append(parent_dir)
 os.chdir(parent_dir)  # Change to project root directory
 
@@ -17,9 +31,9 @@ from src.utils.real_user_selector import RealUserSelector
 
 # Initialize FastAPI app
 app = FastAPI(
-    title="Two-Tower Recommendation API",
-    description="API for serving recommendations using a two-tower architecture",
-    version="1.0.0"
+    title="Two-Tower Recommendation API (2-Phase Training)",
+    description="API for serving recommendations using a two-tower architecture trained with 2-phase approach",
+    version="1.0.0-2phase"
 )
 
 # Add CORS middleware
@@ -84,6 +98,7 @@ class RecommendationsResponse(BaseModel):
     user_profile: UserProfile
     recommendation_type: str
     total_count: int
+    training_approach: str = "2-phase"
 
 
 class RatingPredictionResponse(BaseModel):
@@ -115,12 +130,15 @@ async def startup_event():
     """Initialize the recommendation engines and real user selector on startup."""
     global recommendation_engine, enhanced_recommendation_engine, real_user_selector
     
+    print("🚀 Starting 2-Phase Training API...")
+    print("   Training approach: Pre-trained item tower + Joint fine-tuning")
+    
     try:
-        print("Loading recommendation engine...")
+        print("Loading 2-phase trained recommendation engine...")
         recommendation_engine = RecommendationEngine()
-        print("Recommendation engine loaded successfully!")
+        print("✅ 2-phase recommendation engine loaded successfully!")
     except Exception as e:
-        print(f"Error loading recommendation engine: {e}")
+        print(f"❌ Error loading recommendation engine: {e}")
         recommendation_engine = None
     
     try:
@@ -146,14 +164,17 @@ async def startup_event():
     except Exception as e:
         print(f"Error loading real user selector: {e}")
         real_user_selector = None
+    
+    print("🎯 2-Phase API ready to serve recommendations!")
 
 
 @app.get("/")
 async def root():
     """Root endpoint with API information."""
     return {
-        "message": "Two-Tower Recommendation API",
-        "version": "1.0.0",
+        "message": "Two-Tower Recommendation API (2-Phase Training)",
+        "version": "1.0.0-2phase",
+        "training_approach": "2-phase (pre-trained item tower + joint fine-tuning)",
         "status": "active" if recommendation_engine is not None else "initialization_failed"
     }
 
@@ -163,7 +184,32 @@ async def health_check():
     """Health check endpoint."""
     return {
         "status": "healthy" if recommendation_engine is not None else "unhealthy",
-        "engine_loaded": recommendation_engine is not None
+        "engine_loaded": recommendation_engine is not None,
+        "training_approach": "2-phase"
+    }
+
+
+@app.get("/model-info")
+async def model_info():
+    """Get information about the loaded model."""
+    if recommendation_engine is None:
+        raise HTTPException(status_code=503, detail="Recommendation engine not available")
+    
+    return {
+        "training_approach": "2-phase",
+        "description": "Pre-trained item tower followed by joint training with user tower",
+        "phases": [
+            "Phase 1: Item tower pre-training on item features only",
+            "Phase 2: Joint training of user tower + fine-tuning pre-trained item tower"
+        ],
+        "embedding_dimension": 128,
+        "item_vocab_size": len(recommendation_engine.data_processor.item_vocab) if recommendation_engine.data_processor else "unknown",
+        "artifacts_loaded": {
+            "item_tower_pretrained": "src/artifacts/item_tower_weights",
+            "item_tower_finetuned": "src/artifacts/item_tower_weights_finetuned_best",
+            "user_tower": "src/artifacts/user_tower_weights_best",
+            "rating_model": "src/artifacts/rating_model_weights_best"
+        }
     }
 
 
@@ -351,7 +397,8 @@ async def get_recommendations(request: RecommendationRequest):
             recommendations=formatted_recommendations,
             user_profile=user_profile,
             recommendation_type=request.recommendation_type,
-            total_count=len(formatted_recommendations)
+            total_count=len(formatted_recommendations),
+            training_approach="2-phase"
         )
     
     except Exception as e:
@@ -454,15 +501,20 @@ async def get_sample_items(limit: int = 20):
                 "price": float(row['price'])
             })
         
-        return {"items": items, "total": len(items)}
+        return {"items": items, "total": len(items), "training_approach": "2-phase"}
     
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error retrieving sample items: {str(e)}")
 
 
 if __name__ == "__main__":
+    print("🚀 Starting 2-Phase Training Recommendation API...")
+    print("📊 Training approach: Pre-trained item tower + Joint fine-tuning")
+    print("🌐 Server will be available at: http://localhost:8000")
+    print("📚 API docs at: http://localhost:8000/docs")
+    
     uvicorn.run(
-        "main:app",
+        "api_2phase:app",
         host="0.0.0.0",
         port=8000,
         reload=True

@@ -4,6 +4,8 @@ import tensorflow as tf
 from typing import Dict, List, Tuple, Optional
 from collections import defaultdict
 import pickle
+from concurrent.futures import ThreadPoolExecutor
+import multiprocessing as mp
 
 
 class DataProcessor:
@@ -97,54 +99,73 @@ class DataProcessor:
                                      interactions_df: pd.DataFrame,
                                      items_df: pd.DataFrame,
                                      negative_samples_per_positive: int = 4) -> pd.DataFrame:
-        """Create positive and negative user-item pairs for training."""
+        """Create positive and negative user-item pairs for training (optimized)."""
         
-        # Get all unique items for negative sampling
-        all_items = set(self.item_vocab.keys())
+        # Filter valid interactions once
+        valid_interactions = interactions_df[
+            (interactions_df['user_id'].isin(self.user_vocab)) & 
+            (interactions_df['product_id'].isin(self.item_vocab))
+        ].copy()
         
-        # Create positive pairs
-        positive_pairs = []
-        for _, row in interactions_df.iterrows():
-            if row['user_id'] in self.user_vocab and row['product_id'] in self.item_vocab:
-                positive_pairs.append({
-                    'user_id': row['user_id'],
-                    'product_id': row['product_id'],
-                    'rating': 1.0  # Implicit positive feedback
-                })
+        # Create positive pairs vectorized
+        positive_pairs = valid_interactions[['user_id', 'product_id']].copy()
+        positive_pairs['rating'] = 1.0
         
-        # Create negative pairs
-        negative_pairs = []
-        user_item_interactions = set(
-            (row['user_id'], row['product_id']) 
-            for _, row in interactions_df.iterrows()
+        # Pre-compute user interactions for faster lookup
+        user_items_dict = (
+            valid_interactions.groupby('user_id')['product_id']
+            .apply(set).to_dict()
         )
         
-        for pos_pair in positive_pairs:
-            user_id = pos_pair['user_id']
-            user_interactions = set(
-                row['product_id'] for _, row in interactions_df.iterrows() 
-                if row['user_id'] == user_id
-            )
+        all_items = set(self.item_vocab.keys())
+        all_items_array = np.array(list(all_items))
+        
+        # Generate negative samples in parallel
+        def generate_negatives_for_user(user_data):
+            user_id, user_items = user_data
+            negative_items = all_items - user_items
             
-            # Sample negative items
-            negative_items = all_items - user_interactions
             if len(negative_items) >= negative_samples_per_positive:
+                neg_items_array = np.array(list(negative_items))
                 sampled_negatives = np.random.choice(
-                    list(negative_items), 
-                    size=negative_samples_per_positive, 
-                    replace=False
+                    neg_items_array,
+                    size=negative_samples_per_positive * len(user_items),
+                    replace=len(negative_items) < negative_samples_per_positive * len(user_items)
                 )
                 
-                for neg_item in sampled_negatives:
-                    negative_pairs.append({
-                        'user_id': user_id,
-                        'product_id': neg_item,
-                        'rating': 0.0  # Negative feedback
-                    })
+                # Repeat user_id for each negative sample
+                user_ids = np.repeat(user_id, len(sampled_negatives))
+                ratings = np.zeros(len(sampled_negatives))
+                
+                return pd.DataFrame({
+                    'user_id': user_ids,
+                    'product_id': sampled_negatives,
+                    'rating': ratings
+                })
+            return pd.DataFrame(columns=['user_id', 'product_id', 'rating'])
+        
+        # Process in parallel chunks
+        chunk_size = max(1, len(user_items_dict) // mp.cpu_count())
+        user_chunks = [
+            list(user_items_dict.items())[i:i + chunk_size]
+            for i in range(0, len(user_items_dict), chunk_size)
+        ]
+        
+        negative_dfs = []
+        with ThreadPoolExecutor(max_workers=mp.cpu_count()) as executor:
+            for chunk in user_chunks:
+                chunk_results = list(executor.map(generate_negatives_for_user, chunk))
+                negative_dfs.extend(chunk_results)
+        
+        # Combine all negative samples
+        if negative_dfs:
+            negative_pairs = pd.concat(negative_dfs, ignore_index=True)
+        else:
+            negative_pairs = pd.DataFrame(columns=['user_id', 'product_id', 'rating'])
         
         # Combine positive and negative pairs
-        all_pairs = positive_pairs + negative_pairs
-        return pd.DataFrame(all_pairs)
+        all_pairs = pd.concat([positive_pairs, negative_pairs], ignore_index=True)
+        return all_pairs
     
     def save_vocabularies(self, save_path: str = "src/artifacts/"):
         """Save vocabularies for later use."""
@@ -176,9 +197,19 @@ class DataProcessor:
         print("Vocabularies loaded successfully")
 
 
-def create_tf_dataset(features: Dict[str, np.ndarray], batch_size: int = 256) -> tf.data.Dataset:
-    """Create TensorFlow dataset from features."""
+def create_tf_dataset(features: Dict[str, np.ndarray], batch_size: int = 256, shuffle: bool = True) -> tf.data.Dataset:
+    """Create optimized TensorFlow dataset from features for CPU training."""
     dataset = tf.data.Dataset.from_tensor_slices(features)
+    
+    if shuffle:
+        # Use reasonable buffer size for memory efficiency - handle different feature types
+        sample_key = next(iter(features.keys()))
+        buffer_size = min(len(features[sample_key]), 10000)
+        dataset = dataset.shuffle(buffer_size)
+    
     dataset = dataset.batch(batch_size)
-    dataset = dataset.prefetch(tf.data.AUTOTUNE)
+    
+    # Optimize for CPU with reasonable prefetch
+    dataset = dataset.prefetch(2)  # Reduced from AUTOTUNE for CPU efficiency
+    
     return dataset

@@ -1,3 +1,17 @@
+#!/usr/bin/env python3
+"""
+API for Single Joint Trained Recommendation System
+
+This API serves recommendations from a model trained using the single joint approach:
+- Both user and item towers trained simultaneously from scratch
+- End-to-end optimization without pre-training phases
+
+Usage:
+    python api_joint.py
+    
+Then access: http://localhost:8000
+"""
+
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -8,7 +22,7 @@ import sys
 import pandas as pd
 
 # Add src to path for imports and set working directory
-parent_dir = os.path.dirname(os.path.dirname(__file__))
+parent_dir = os.path.dirname(__file__)
 sys.path.append(parent_dir)
 os.chdir(parent_dir)  # Change to project root directory
 
@@ -17,9 +31,9 @@ from src.utils.real_user_selector import RealUserSelector
 
 # Initialize FastAPI app
 app = FastAPI(
-    title="Two-Tower Recommendation API",
-    description="API for serving recommendations using a two-tower architecture",
-    version="1.0.0"
+    title="Two-Tower Recommendation API (Single Joint Training)",
+    description="API for serving recommendations using a two-tower architecture trained with single joint approach",
+    version="1.0.0-joint"
 )
 
 # Add CORS middleware
@@ -84,6 +98,7 @@ class RecommendationsResponse(BaseModel):
     user_profile: UserProfile
     recommendation_type: str
     total_count: int
+    training_approach: str = "single-joint"
 
 
 class RatingPredictionResponse(BaseModel):
@@ -115,12 +130,15 @@ async def startup_event():
     """Initialize the recommendation engines and real user selector on startup."""
     global recommendation_engine, enhanced_recommendation_engine, real_user_selector
     
+    print("🚀 Starting Single Joint Training API...")
+    print("   Training approach: End-to-end joint optimization from scratch")
+    
     try:
-        print("Loading recommendation engine...")
+        print("Loading single joint trained recommendation engine...")
         recommendation_engine = RecommendationEngine()
-        print("Recommendation engine loaded successfully!")
+        print("✅ Single joint recommendation engine loaded successfully!")
     except Exception as e:
-        print(f"Error loading recommendation engine: {e}")
+        print(f"❌ Error loading recommendation engine: {e}")
         recommendation_engine = None
     
     try:
@@ -146,14 +164,17 @@ async def startup_event():
     except Exception as e:
         print(f"Error loading real user selector: {e}")
         real_user_selector = None
+    
+    print("🎯 Single Joint API ready to serve recommendations!")
 
 
 @app.get("/")
 async def root():
     """Root endpoint with API information."""
     return {
-        "message": "Two-Tower Recommendation API",
-        "version": "1.0.0",
+        "message": "Two-Tower Recommendation API (Single Joint Training)",
+        "version": "1.0.0-joint",
+        "training_approach": "single-joint (end-to-end optimization from scratch)",
         "status": "active" if recommendation_engine is not None else "initialization_failed"
     }
 
@@ -163,7 +184,33 @@ async def health_check():
     """Health check endpoint."""
     return {
         "status": "healthy" if recommendation_engine is not None else "unhealthy",
-        "engine_loaded": recommendation_engine is not None
+        "engine_loaded": recommendation_engine is not None,
+        "training_approach": "single-joint"
+    }
+
+
+@app.get("/model-info")
+async def model_info():
+    """Get information about the loaded model."""
+    if recommendation_engine is None:
+        raise HTTPException(status_code=503, detail="Recommendation engine not available")
+    
+    return {
+        "training_approach": "single-joint",
+        "description": "User and item towers trained simultaneously from scratch",
+        "advantages": [
+            "End-to-end optimization for better task alignment",
+            "No pre-training phase required", 
+            "Faster overall training pipeline",
+            "Direct optimization for recommendation objectives"
+        ],
+        "embedding_dimension": 128,
+        "item_vocab_size": len(recommendation_engine.data_processor.item_vocab) if recommendation_engine.data_processor else "unknown",
+        "artifacts_loaded": {
+            "user_tower": "src/artifacts/user_tower_weights_best",
+            "item_tower_joint": "src/artifacts/item_tower_weights_finetuned_best",
+            "rating_model": "src/artifacts/rating_model_weights_best"
+        }
     }
 
 
@@ -351,7 +398,8 @@ async def get_recommendations(request: RecommendationRequest):
             recommendations=formatted_recommendations,
             user_profile=user_profile,
             recommendation_type=request.recommendation_type,
-            total_count=len(formatted_recommendations)
+            total_count=len(formatted_recommendations),
+            training_approach="single-joint"
         )
     
     except Exception as e:
@@ -454,15 +502,20 @@ async def get_sample_items(limit: int = 20):
                 "price": float(row['price'])
             })
         
-        return {"items": items, "total": len(items)}
+        return {"items": items, "total": len(items), "training_approach": "single-joint"}
     
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error retrieving sample items: {str(e)}")
 
 
 if __name__ == "__main__":
+    print("🚀 Starting Single Joint Training Recommendation API...")
+    print("⚡ Training approach: End-to-end joint optimization from scratch")
+    print("🌐 Server will be available at: http://localhost:8000")
+    print("📚 API docs at: http://localhost:8000/docs")
+    
     uvicorn.run(
-        "main:app",
+        "api_joint:app",
         host="0.0.0.0",
         port=8000,
         reload=True

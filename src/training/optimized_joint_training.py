@@ -14,7 +14,7 @@ class OptimizedJointTrainer:
     """Optimized joint training with performance enhancements."""
     
     def __init__(self,
-                 embedding_dim: int = 64,
+                 embedding_dim: int = 128,  # Updated to 128D output
                  user_learning_rate: float = 0.001,
                  item_learning_rate: float = 0.0001,
                  rating_weight: float = 1.0,
@@ -381,7 +381,7 @@ def main():
     
     print("Initializing optimized joint trainer...")
     trainer = OptimizedJointTrainer(
-        embedding_dim=64,
+        embedding_dim=128,  # Updated to 128D
         user_learning_rate=0.002,  # Slightly higher for faster convergence
         item_learning_rate=0.0002,
         rating_weight=1.0,

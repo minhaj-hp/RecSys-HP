@@ -63,7 +63,7 @@ class UserDatasetCreator:
             # Use more efficient random generation
             num_items = len(items_df['product_id'].unique())
             item_ids = items_df['product_id'].unique()
-            embedding_matrix = np.random.rand(num_items, 64).astype(np.float32)
+            embedding_matrix = np.random.rand(num_items, 128).astype(np.float32)  # Updated to 128D
             
             dummy_embeddings = dict(zip(item_ids, embedding_matrix))
             print(f"Created dummy embeddings for {len(dummy_embeddings)} items")
@@ -72,7 +72,7 @@ class UserDatasetCreator:
     def aggregate_user_history_embeddings(self, 
                                         user_histories: Dict[int, List[int]],
                                         item_embeddings: Dict[int, np.ndarray],
-                                        embedding_dim: int = 64) -> Dict[int, np.ndarray]:
+                                        embedding_dim: int = 128) -> Dict[int, np.ndarray]:  # Updated to 128D
         """Aggregate item embeddings for each user's interaction history."""
         
         user_aggregated_embeddings = {}
@@ -103,9 +103,11 @@ class UserDatasetCreator:
             
             # Pad or truncate to max_history_length
             if len(history_embeddings) < self.max_history_length:
+                # Add padding at the END so real interactions are at the BEGINNING
                 padding = np.zeros((self.max_history_length - len(history_embeddings), embedding_dim))
-                history_embeddings = np.vstack([padding, history_embeddings])
+                history_embeddings = np.vstack([history_embeddings, padding])
             else:
+                # Keep most recent interactions
                 history_embeddings = history_embeddings[-self.max_history_length:]
             
             user_aggregated_embeddings[user_id] = history_embeddings
@@ -366,6 +368,59 @@ def main():
         pickle.dump(val_training_features, f)
     
     print("User dataset creation completed!")
+
+
+def prepare_user_features(users_df: pd.DataFrame,
+                          user_histories: Dict[int, List[int]],
+                          item_features: Dict[str, np.ndarray],
+                          max_history_length: int = 50,
+                          embedding_dim: int = 128) -> Dict[int, Dict]:
+    """Standalone function to prepare user features with categorical demographics."""
+    
+    creator = UserDatasetCreator(max_history_length=max_history_length)
+    
+    # Create dummy item embeddings if not available (for 128D)
+    item_embeddings = {}
+    unique_items = set()
+    for history in user_histories.values():
+        unique_items.update(history)
+    
+    # Create random embeddings for items (will be replaced by actual embeddings later)
+    for item_vocab_idx in unique_items:
+        item_embeddings[item_vocab_idx] = np.random.randn(embedding_dim).astype(np.float32)
+    
+    # Get user aggregated embeddings 
+    user_aggregated_embeddings = creator.aggregate_user_history_embeddings(
+        user_histories, item_embeddings, embedding_dim
+    )
+    
+    # Process user features
+    user_feature_dict = {}
+    
+    for _, user_row in users_df.iterrows():
+        user_id = user_row['user_id']
+        
+        if user_id not in user_aggregated_embeddings:
+            continue
+            
+        # Categorize demographics
+        age_cat = creator.categorize_age(user_row['age'])
+        gender_cat = 1 if user_row['gender'].lower() == 'male' else 0
+        
+        # Categorize income using percentiles from all users
+        income_categories = creator.categorize_income(users_df['income'])
+        user_idx = users_df[users_df['user_id'] == user_id].index[0]
+        income_cat = income_categories[user_idx]
+        
+        user_feature_dict[user_id] = {
+            'age': age_cat,
+            'gender': gender_cat, 
+            'income': income_cat,
+            'item_history_embeddings': user_aggregated_embeddings[user_id]
+        }
+    
+    print(f"Prepared features for {len(user_feature_dict)} users with {embedding_dim}D embeddings")
+    return user_feature_dict
 
 
 if __name__ == "__main__":
