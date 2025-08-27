@@ -37,6 +37,39 @@ enhanced_recommendation_engine = None
 real_user_selector = None
 
 
+def filter_interactions_by_category(interaction_history: List[int], selected_category: str, items_df) -> List[int]:
+    """Filter user interaction history to only include items from selected category."""
+    if not selected_category or not interaction_history:
+        return interaction_history
+    
+    # Filter items that match the category prefix
+    filtered_items = []
+    for item_id in interaction_history:
+        item_row = items_df[items_df['product_id'] == item_id]
+        if not item_row.empty:
+            item_category = str(item_row.iloc[0]['category_code'])
+            # Check if item category starts with selected category (hierarchical matching)
+            if item_category.startswith(selected_category):
+                filtered_items.append(item_id)
+    
+    return filtered_items
+
+
+def filter_recommendations_by_category(recommendations: List, selected_category: str) -> List:
+    """Filter recommendation results to only include items from selected category."""
+    if not selected_category:
+        return recommendations
+    
+    filtered_recommendations = []
+    for item_id, score, item_info in recommendations:
+        item_category = item_info.get('category_code', '')
+        # Check if item category starts with selected category (hierarchical matching)
+        if item_category.startswith(selected_category):
+            filtered_recommendations.append((item_id, score, item_info))
+    
+    return filtered_recommendations
+
+
 # Pydantic models for request/response
 class UserProfile(BaseModel):
     age: int
@@ -53,6 +86,7 @@ class RecommendationRequest(BaseModel):
     category_boost: Optional[float] = 1.5  # For enhanced recommendations
     enable_category_boost: Optional[bool] = True
     enable_diversity: Optional[bool] = True
+    selected_category: Optional[str] = None  # Category filter for recommendations
 
 
 class ItemSimilarityRequest(BaseModel):
@@ -108,6 +142,29 @@ class RealUsersResponse(BaseModel):
     users: List[RealUserProfile]
     total_count: int
     dataset_summary: Dict[str, Any]
+
+
+class EnrichedInteraction(BaseModel):
+    product_id: int
+    brand: str
+    category_code: str
+    price: float
+
+
+class EnrichedBehavioralPattern(BaseModel):
+    user_id: int
+    age: int
+    gender: str
+    income: int
+    interaction_stats: Dict[str, int]
+    interaction_pattern: str
+    summary: str
+    enriched_interactions: List[EnrichedInteraction]
+
+
+class EnrichedBehavioralPatternsResponse(BaseModel):
+    patterns: List[EnrichedBehavioralPattern]
+    total_count: int
 
 
 @app.on_event("startup")
@@ -229,6 +286,64 @@ async def get_dataset_summary():
         raise HTTPException(status_code=500, detail=f"Error retrieving dataset summary: {str(e)}")
 
 
+@app.get("/behavioral-patterns", response_model=EnrichedBehavioralPatternsResponse)
+async def get_enriched_behavioral_patterns(count: int = 100, min_interactions: int = 5):
+    """Get behavioral patterns with enriched item details (brand, category, price)."""
+    
+    if real_user_selector is None or recommendation_engine is None:
+        raise HTTPException(status_code=503, detail="Real user selector or recommendation engine not available")
+    
+    try:
+        # Get real user profiles
+        real_users = real_user_selector.get_real_users(n=count, min_interactions=min_interactions)
+        
+        enriched_patterns = []
+        for user in real_users:
+            # Enrich interaction history with item details
+            enriched_interactions = []
+            for item_id in user['interaction_history'][:20]:  # Limit to first 20 items
+                try:
+                    # Use the same method as the recommendation engine to get item info
+                    item_info = recommendation_engine._get_item_info(item_id)
+                    enriched_interactions.append(EnrichedInteraction(
+                        product_id=item_id,
+                        brand=item_info.get('brand', 'Unknown'),
+                        category_code=item_info.get('category_code', 'Unknown'),
+                        price=item_info.get('price', 0.0)
+                    ))
+                except Exception as e:
+                    # If item not found, add with unknown details
+                    print(f"Item {item_id} not found: {e}")
+                    enriched_interactions.append(EnrichedInteraction(
+                        product_id=item_id,
+                        brand='Unknown',
+                        category_code='Unknown',
+                        price=0.0
+                    ))
+            
+            # Create enriched behavioral pattern
+            enriched_pattern = EnrichedBehavioralPattern(
+                user_id=user['user_id'],
+                age=user['age'],
+                gender=user['gender'],
+                income=user['income'],
+                interaction_stats=user['interaction_stats'],
+                interaction_pattern=user['interaction_pattern'],
+                summary=user['summary'],
+                enriched_interactions=enriched_interactions
+            )
+            
+            enriched_patterns.append(enriched_pattern)
+        
+        return EnrichedBehavioralPatternsResponse(
+            patterns=enriched_patterns,
+            total_count=len(enriched_patterns)
+        )
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error retrieving enriched behavioral patterns: {str(e)}")
+
+
 @app.post("/recommendations", response_model=RecommendationsResponse)
 async def get_recommendations(request: RecommendationRequest):
     """Get item recommendations for a user."""
@@ -239,28 +354,47 @@ async def get_recommendations(request: RecommendationRequest):
     try:
         user_profile = request.user_profile
         
+        # Filter interaction history by selected category if specified
+        filtered_interaction_history = user_profile.interaction_history
+        if request.selected_category:
+            filtered_interaction_history = filter_interactions_by_category(
+                user_profile.interaction_history, 
+                request.selected_category, 
+                recommendation_engine.items_df
+            )
+            
+            # If no interactions exist for this category, return empty recommendations
+            if not filtered_interaction_history and request.recommendation_type in ["content", "hybrid"]:
+                return RecommendationsResponse(
+                    recommendations=[],
+                    user_profile=user_profile,
+                    recommendation_type=request.recommendation_type,
+                    total_count=0
+                )
+        
         # Generate recommendations based on type
         if request.recommendation_type == "collaborative":
             recommendations = recommendation_engine.recommend_items_collaborative(
                 age=user_profile.age,
                 gender=user_profile.gender,
                 income=user_profile.income,
-                interaction_history=user_profile.interaction_history,
-                k=request.num_recommendations
+                interaction_history=filtered_interaction_history,
+                k=request.num_recommendations * 2  # Get more to allow for filtering
             )
         
         elif request.recommendation_type == "content":
-            if not user_profile.interaction_history:
+            if not filtered_interaction_history:
                 raise HTTPException(
                     status_code=400, 
-                    detail="Content-based recommendations require interaction history"
+                    detail="Content-based recommendations require interaction history" + 
+                           (f" in category '{request.selected_category}'" if request.selected_category else "")
                 )
             
             # Use most recent interaction as seed
-            seed_item = user_profile.interaction_history[-1]
+            seed_item = filtered_interaction_history[-1]
             recommendations = recommendation_engine.recommend_items_content_based(
                 seed_item_id=seed_item,
-                k=request.num_recommendations
+                k=request.num_recommendations * 2  # Get more to allow for filtering
             )
         
         elif request.recommendation_type == "hybrid":
@@ -268,8 +402,8 @@ async def get_recommendations(request: RecommendationRequest):
                 age=user_profile.age,
                 gender=user_profile.gender,
                 income=user_profile.income,
-                interaction_history=user_profile.interaction_history,
-                k=request.num_recommendations,
+                interaction_history=filtered_interaction_history,
+                k=request.num_recommendations * 2,  # Get more to allow for filtering
                 collaborative_weight=request.collaborative_weight
             )
         
@@ -284,8 +418,8 @@ async def get_recommendations(request: RecommendationRequest):
                     age=user_profile.age,
                     gender=user_profile.gender,
                     income=user_profile.income,
-                    interaction_history=user_profile.interaction_history,
-                    k=request.num_recommendations,
+                    interaction_history=filtered_interaction_history,
+                    k=request.num_recommendations * 2,  # Get more to allow for filtering
                     diversity_weight=0.3 if request.enable_diversity else 0.0,
                     category_boost=request.category_boost if request.enable_category_boost else 1.0
                 )
@@ -295,8 +429,8 @@ async def get_recommendations(request: RecommendationRequest):
                     age=user_profile.age,
                     gender=user_profile.gender,
                     income=user_profile.income,
-                    interaction_history=user_profile.interaction_history,
-                    k=request.num_recommendations,
+                    interaction_history=filtered_interaction_history,
+                    k=request.num_recommendations * 2,  # Get more to allow for filtering
                     collaborative_weight=request.collaborative_weight,
                     category_boost=request.category_boost,
                     enable_category_boost=request.enable_category_boost,
@@ -311,8 +445,8 @@ async def get_recommendations(request: RecommendationRequest):
                 age=user_profile.age,
                 gender=user_profile.gender,
                 income=user_profile.income,
-                interaction_history=user_profile.interaction_history,
-                k=request.num_recommendations,
+                interaction_history=filtered_interaction_history,
+                k=request.num_recommendations * 2,  # Get more to allow for filtering
                 diversity_weight=0.3 if request.enable_diversity else 0.0,
                 category_boost=request.category_boost if request.enable_category_boost else 1.0
             )
@@ -325,8 +459,8 @@ async def get_recommendations(request: RecommendationRequest):
                 age=user_profile.age,
                 gender=user_profile.gender,
                 income=user_profile.income,
-                interaction_history=user_profile.interaction_history,
-                k=request.num_recommendations,
+                interaction_history=filtered_interaction_history,
+                k=request.num_recommendations * 2,  # Get more to allow for filtering
                 focus_percentage=0.8
             )
         
@@ -335,6 +469,12 @@ async def get_recommendations(request: RecommendationRequest):
                 status_code=400, 
                 detail="Invalid recommendation_type. Must be 'collaborative', 'content', 'hybrid', 'enhanced', 'enhanced_128d', or 'category_focused'"
             )
+        
+        # Apply category filtering to final recommendations if needed
+        if request.selected_category:
+            recommendations = filter_recommendations_by_category(recommendations, request.selected_category)
+            # Limit to requested number after filtering
+            recommendations = recommendations[:request.num_recommendations]
         
         # Format response
         formatted_recommendations = []
@@ -366,9 +506,11 @@ async def get_similar_items(request: ItemSimilarityRequest):
         raise HTTPException(status_code=503, detail="Recommendation engine not available")
     
     try:
+        # Use category-aware similar items with 60% same-category constraint
         recommendations = recommendation_engine.recommend_items_content_based(
             seed_item_id=request.item_id,
-            k=request.num_recommendations
+            k=request.num_recommendations,
+            same_category_ratio=0.6  # Ensure 60% same category, 40% different
         )
         
         formatted_recommendations = []

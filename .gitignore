@@ -154,6 +154,8 @@ yarn-error.log*
 
 # Machine Learning / AI artifacts
 src/artifacts/
+models/
+checkpoints/
 *.pkl
 *.npy
 *.bin
@@ -162,22 +164,36 @@ src/artifacts/
 checkpoint
 *.h5
 *.hdf5
+*.weights
+*.model
 wandb/
 mlruns/
 lightning_logs/
+tensorboard_logs/
 
 # TensorFlow
 *.pb
 *.pbtxt
+saved_model/
+*.ckpt
+*.ckpt.*
 
 # PyTorch
 *.pth
 *.pt
 
-# Datasets (if large or sensitive)
-datasets/*.csv
-data/
-*.csv
+# FAISS indices
+*.faiss
+*.index
+
+# Large datasets (uncomment if datasets are large or contain sensitive data)
+# datasets/*.csv
+# data/
+# *.csv
+
+# Keep sample/demo datasets
+!datasets/sample_*.csv
+!datasets/demo_*.csv
 
 # IDE
 .vscode/
@@ -197,15 +213,17 @@ Thumbs.db
 
 # Analysis and debug files
 debug_*.py
-test_*.py
+test_output_*.py
 analyze_enhanced_*.py
-analyze_recommendation_quality.py
 *_analysis_*
 *_report.*
 simple_*.py
+temp_*.py
+scratch_*.py
 
-# Keep analyze_recommendations.py - it's wanted
+# Keep main analysis tools
 !analyze_recommendations.py
+!tests/
 
 # Backup directories
 *_backup/
@@ -222,3 +240,25 @@ config.json
 secrets.json
 .secret
 .key
+api_keys.txt
+credentials.json
+
+# Jupyter notebook outputs (but keep the notebooks)
+*.ipynb_checkpoints/
+*-checkpoint.ipynb
+
+# Large output files
+*.log
+logs/
+output/
+results/
+experiments/
+
+# Docker
+.dockerignore
+Dockerfile*
+docker-compose*.yml
+
+# Keep essential config files
+!package.json
+!package-lock.json

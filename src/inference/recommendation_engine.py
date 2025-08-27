@@ -356,17 +356,76 @@ class RecommendationEngine:
     
     def recommend_items_content_based(self,
                                     seed_item_id: int,
-                                    k: int = 10) -> List[Tuple[int, float, Dict]]:
-        """Generate recommendations using content-based filtering (item-item similarity)."""
+                                    k: int = 10,
+                                    same_category_ratio: float = None) -> List[Tuple[int, float, Dict]]:
+        """Generate recommendations using content-based filtering with optional category constraint."""
         
-        similar_items = self.faiss_index.search_similar_items(seed_item_id, k)
+        if same_category_ratio is None:
+            # Original behavior - pure similarity ranking
+            similar_items = self.faiss_index.search_similar_items(seed_item_id, k)
+            recommendations = []
+            for item_id, score in similar_items:
+                item_info = self._get_item_info(item_id)
+                recommendations.append((item_id, score, item_info))
+            return recommendations
         
-        recommendations = []
-        for item_id, score in similar_items:
-            item_info = self._get_item_info(item_id)
-            recommendations.append((item_id, score, item_info))
-        
-        return recommendations
+        else:
+            # Category-aware similar items for clicked recommendations
+            print(f"Finding similar items with {same_category_ratio*100}% same-category constraint")
+            
+            # Get seed item category
+            seed_item_info = self._get_item_info(seed_item_id)
+            seed_category = seed_item_info.get('category_code', '')
+            print(f"Seed item {seed_item_id} category: {seed_category}")
+            
+            # Get more candidates (3x) to ensure category diversity
+            candidate_items = self.faiss_index.search_similar_items(seed_item_id, k * 3)
+            print(f"Retrieved {len(candidate_items)} candidates from FAISS")
+            
+            # Separate by category
+            same_category_items = []
+            different_category_items = []
+            
+            for item_id, score in candidate_items:
+                item_info = self._get_item_info(item_id)
+                item_category = item_info.get('category_code', '')
+                
+                if item_category == seed_category:
+                    same_category_items.append((item_id, score, item_info))
+                else:
+                    different_category_items.append((item_id, score, item_info))
+            
+            print(f"Same category items: {len(same_category_items)}, Different category: {len(different_category_items)}")
+            
+            # Calculate target counts (60/40 split)
+            same_category_count = int(k * same_category_ratio)  # 6 out of 10
+            different_category_count = k - same_category_count   # 4 out of 10
+            
+            print(f"Target: {same_category_count} same category, {different_category_count} different category")
+            
+            # Build balanced recommendation list
+            recommendations = []
+            
+            # Add same-category items (up to 60%)
+            recommendations.extend(same_category_items[:same_category_count])
+            
+            # Add different-category items (up to 40%)
+            recommendations.extend(different_category_items[:different_category_count])
+            
+            # Fill any remaining slots with best available items
+            if len(recommendations) < k:
+                remaining_items = same_category_items[same_category_count:] + different_category_items[different_category_count:]
+                remaining_items.sort(key=lambda x: x[1], reverse=True)  # Sort by similarity score
+                needed = k - len(recommendations)
+                recommendations.extend(remaining_items[:needed])
+            
+            print(f"Final recommendations: {len(recommendations)} items")
+            
+            # Log category distribution for verification
+            final_same_category = sum(1 for _, _, item_info in recommendations if item_info.get('category_code', '') == seed_category)
+            print(f"Final category distribution: {final_same_category}/{len(recommendations)} same category ({final_same_category/len(recommendations)*100:.1f}%)")
+            
+            return recommendations[:k]
     
     def recommend_items_hybrid(self,
                              age: int,
