@@ -45,6 +45,50 @@ class UserDatasetCreator:
         categories = np.clip(categories, 0, 4)
         
         return categories.astype(np.int32)
+    
+    def categorize_profession(self, profession: str) -> int:
+        """Categorize profession into numeric categories."""
+        profession_map = {
+            "Technology": 0,
+            "Healthcare": 1, 
+            "Education": 2,
+            "Finance": 3,
+            "Retail": 4,
+            "Manufacturing": 5,
+            "Services": 6,
+            "Other": 7
+        }
+        return profession_map.get(profession, 7)  # Default to "Other"
+    
+    def categorize_location(self, location: str) -> int:
+        """Categorize location into numeric categories."""
+        location_map = {
+            "Urban": 0,
+            "Suburban": 1,
+            "Rural": 2
+        }
+        return location_map.get(location, 0)  # Default to "Urban"
+    
+    def categorize_education_level(self, education: str) -> int:
+        """Categorize education level into numeric categories."""
+        education_map = {
+            "High School": 0,
+            "Some College": 1,
+            "Bachelor's": 2,
+            "Master's": 3,
+            "PhD+": 4
+        }
+        return education_map.get(education, 0)  # Default to "High School"
+    
+    def categorize_marital_status(self, marital_status: str) -> int:
+        """Categorize marital status into numeric categories."""
+        marital_map = {
+            "Single": 0,
+            "Married": 1,
+            "Divorced": 2,
+            "Widowed": 3
+        }
+        return marital_map.get(marital_status, 0)  # Default to "Single"
         
     @lru_cache(maxsize=1)
     def load_item_embeddings(self, embeddings_path: str = "src/artifacts/item_embeddings.npy") -> Dict[int, np.ndarray]:
@@ -155,6 +199,12 @@ class UserDatasetCreator:
         # Categorize income (5 percentile-based categories)
         user_demographics['income_category'] = self.categorize_income(user_demographics['income'])
         
+        # Categorize new demographic features
+        user_demographics['profession_category'] = user_demographics['profession'].apply(self.categorize_profession)
+        user_demographics['location_category'] = user_demographics['location'].apply(self.categorize_location)
+        user_demographics['education_category'] = user_demographics['education_level'].apply(self.categorize_education_level)
+        user_demographics['marital_category'] = user_demographics['marital_status'].apply(self.categorize_marital_status)
+        
         # Create mapping from user_id to array index
         user_id_to_index = {uid: idx for idx, uid in enumerate(user_demographics['user_id'])}
         
@@ -165,6 +215,10 @@ class UserDatasetCreator:
             'age': user_demographics['age_category'].values.astype(np.int32),  # Categorical age
             'gender': user_demographics['gender_numeric'].values.astype(np.int32),
             'income': user_demographics['income_category'].values.astype(np.int32),  # Categorical income
+            'profession': user_demographics['profession_category'].values.astype(np.int32),  # Categorical profession
+            'location': user_demographics['location_category'].values.astype(np.int32),  # Categorical location
+            'education_level': user_demographics['education_category'].values.astype(np.int32),  # Categorical education
+            'marital_status': user_demographics['marital_category'].values.astype(np.int32),  # Categorical marital status
             'item_history_embeddings': np.array([
                 user_aggregated_embeddings[uid] for uid in user_demographics['user_id']
             ]).astype(np.float32)
@@ -173,6 +227,10 @@ class UserDatasetCreator:
         print(f"Prepared user features for {len(valid_users)} users")
         print(f"Age categories: {np.unique(user_features['age'], return_counts=True)}")
         print(f"Income categories: {np.unique(user_features['income'], return_counts=True)}")
+        print(f"Profession categories: {np.unique(user_features['profession'], return_counts=True)}")
+        print(f"Location categories: {np.unique(user_features['location'], return_counts=True)}")
+        print(f"Education categories: {np.unique(user_features['education_level'], return_counts=True)}")
+        print(f"Marital status categories: {np.unique(user_features['marital_status'], return_counts=True)}")
         print(f"History embeddings shape: {user_features['item_history_embeddings'].shape}")
         
         return user_features
@@ -256,6 +314,10 @@ class UserDatasetCreator:
         training_features['age'] = user_features['age'][user_indices]
         training_features['gender'] = user_features['gender'][user_indices]
         training_features['income'] = user_features['income'][user_indices]
+        training_features['profession'] = user_features['profession'][user_indices]
+        training_features['location'] = user_features['location'][user_indices]
+        training_features['education_level'] = user_features['education_level'][user_indices]
+        training_features['marital_status'] = user_features['marital_status'][user_indices]
         training_features['item_history_embeddings'] = user_features['item_history_embeddings'][user_indices]
         
         # Item features for each pair
@@ -412,10 +474,20 @@ def prepare_user_features(users_df: pd.DataFrame,
         user_idx = users_df[users_df['user_id'] == user_id].index[0]
         income_cat = income_categories[user_idx]
         
+        # Get new demographic features from the row
+        profession_cat = creator.categorize_profession(user_row.get('profession', 'Other'))
+        location_cat = creator.categorize_location(user_row.get('location', 'Urban'))
+        education_cat = creator.categorize_education_level(user_row.get('education_level', 'High School'))
+        marital_cat = creator.categorize_marital_status(user_row.get('marital_status', 'Single'))
+        
         user_feature_dict[user_id] = {
             'age': age_cat,
             'gender': gender_cat, 
             'income': income_cat,
+            'profession': profession_cat,
+            'location': location_cat,
+            'education_level': education_cat,
+            'marital_status': marital_cat,
             'item_history_embeddings': user_aggregated_embeddings[user_id]
         }
     

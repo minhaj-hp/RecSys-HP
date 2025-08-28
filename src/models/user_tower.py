@@ -32,6 +32,27 @@ class UserTower(tf.keras.Model):
             2, embedding_dim // 16, name="gender_embedding"
         )
         
+        # New demographic embeddings
+        # Profession: 8 categories (Technology, Healthcare, Education, Finance, Retail, Manufacturing, Services, Other)
+        self.profession_embedding = tf.keras.layers.Embedding(
+            8, embedding_dim // 16, name="profession_embedding"
+        )
+        
+        # Location: 3 categories (Urban, Suburban, Rural)
+        self.location_embedding = tf.keras.layers.Embedding(
+            3, embedding_dim // 16, name="location_embedding"
+        )
+        
+        # Education Level: 5 categories (High School, Some College, Bachelor's, Master's, PhD+)
+        self.education_embedding = tf.keras.layers.Embedding(
+            5, embedding_dim // 16, name="education_embedding"
+        )
+        
+        # Marital Status: 4 categories (Single, Married, Divorced, Widowed)
+        self.marital_embedding = tf.keras.layers.Embedding(
+            4, embedding_dim // 16, name="marital_embedding"
+        )
+        
         # History aggregation layers
         self.history_attention = tf.keras.layers.MultiHeadAttention(
             num_heads=4,
@@ -57,12 +78,20 @@ class UserTower(tf.keras.Model):
         age = inputs["age"]  # Now categorical (0-5)
         gender = inputs["gender"]  # Categorical (0-1)
         income = inputs["income"]  # Now categorical (0-4)
+        profession = inputs["profession"]  # Categorical (0-7)
+        location = inputs["location"]  # Categorical (0-2)
+        education = inputs["education_level"]  # Categorical (0-4)
+        marital_status = inputs["marital_status"]  # Categorical (0-3)
         item_history = inputs["item_history_embeddings"]  # [batch_size, seq_len, emb_dim]
         
         # Process demographics through embeddings
         age_emb = self.age_embedding(age)  # [batch_size, embedding_dim//16]
         income_emb = self.income_embedding(income)  # [batch_size, embedding_dim//16]
         gender_emb = self.gender_embedding(gender)  # [batch_size, embedding_dim//16]
+        profession_emb = self.profession_embedding(profession)  # [batch_size, embedding_dim//16]
+        location_emb = self.location_embedding(location)  # [batch_size, embedding_dim//16]
+        education_emb = self.education_embedding(education)  # [batch_size, embedding_dim//16]
+        marital_emb = self.marital_embedding(marital_status)  # [batch_size, embedding_dim//16]
         
         # Aggregate item history using attention
         # Create attention mask for padding
@@ -84,6 +113,10 @@ class UserTower(tf.keras.Model):
             age_emb,
             income_emb,
             gender_emb,
+            profession_emb,
+            location_emb,
+            education_emb,
+            marital_emb,
             history_aggregated
         ], axis=-1)
         

@@ -33,7 +33,6 @@ app.add_middleware(
 
 # Global instances
 recommendation_engine = None
-enhanced_recommendation_engine = None
 real_user_selector = None
 
 
@@ -75,13 +74,17 @@ class UserProfile(BaseModel):
     age: int
     gender: str  # "male" or "female"
     income: float
+    profession: Optional[str] = "Other"
+    location: Optional[str] = "Urban"
+    education_level: Optional[str] = "High School"
+    marital_status: Optional[str] = "Single"
     interaction_history: Optional[List[int]] = []
 
 
 class RecommendationRequest(BaseModel):
     user_profile: UserProfile
     num_recommendations: int = 10
-    recommendation_type: str = "hybrid"  # "collaborative", "content", "hybrid", "enhanced", "enhanced_128d", "category_focused"
+    recommendation_type: str = "hybrid"  # "collaborative", "content" (aggregated history), "hybrid"
     collaborative_weight: Optional[float] = 0.7
     category_boost: Optional[float] = 1.5  # For enhanced recommendations
     enable_category_boost: Optional[bool] = True
@@ -132,6 +135,10 @@ class RealUserProfile(BaseModel):
     age: int
     gender: str
     income: int
+    profession: Optional[str] = None
+    location: Optional[str] = None
+    education_level: Optional[str] = None
+    marital_status: Optional[str] = None
     interaction_history: List[int]
     interaction_stats: Dict[str, int]
     interaction_pattern: str
@@ -169,39 +176,24 @@ class EnrichedBehavioralPatternsResponse(BaseModel):
 
 @app.on_event("startup")
 async def startup_event():
-    """Initialize the recommendation engines and real user selector on startup."""
-    global recommendation_engine, enhanced_recommendation_engine, real_user_selector
+    """Initialize the recommendation engine and real user selector on startup."""
+    global recommendation_engine, real_user_selector
     
     try:
-        print("Loading recommendation engine...")
+        print("Loading recommendation engine with enhanced demographics...")
         recommendation_engine = RecommendationEngine()
-        print("Recommendation engine loaded successfully!")
+        print("✅ Recommendation engine loaded successfully!")
+        print("   Supports 7 demographic features: age, gender, income, profession, location, education, marital_status")
     except Exception as e:
-        print(f"Error loading recommendation engine: {e}")
+        print(f"❌ Error loading recommendation engine: {e}")
         recommendation_engine = None
-    
-    try:
-        print("Loading enhanced recommendation engine...")
-        # Try enhanced 128D engine first, fallback to regular enhanced
-        try:
-            from src.inference.enhanced_recommendation_engine_128d import Enhanced128DRecommendationEngine
-            enhanced_recommendation_engine = Enhanced128DRecommendationEngine()
-            print("✅ Using Enhanced 128D Recommendation Engine")
-        except:
-            from src.inference.enhanced_recommendation_engine import EnhancedRecommendationEngine
-            enhanced_recommendation_engine = EnhancedRecommendationEngine()
-            print("⚠️  Using fallback Enhanced Recommendation Engine")
-        print("Enhanced recommendation engine loaded successfully!")
-    except Exception as e:
-        print(f"Error loading enhanced recommendation engine: {e}")
-        enhanced_recommendation_engine = None
     
     try:
         print("Loading real user selector...")
         real_user_selector = RealUserSelector()
-        print("Real user selector loaded successfully!")
+        print("✅ Real user selector loaded successfully!")
     except Exception as e:
-        print(f"Error loading real user selector: {e}")
+        print(f"❌ Error loading real user selector: {e}")
         real_user_selector = None
 
 
@@ -211,7 +203,12 @@ async def root():
     return {
         "message": "Two-Tower Recommendation API",
         "version": "1.0.0",
-        "status": "active" if recommendation_engine is not None else "initialization_failed"
+        "status": "active" if recommendation_engine is not None else "initialization_failed",
+        "enhanced_demographics": True,
+        "supported_demographics": [
+            "age", "gender", "income", "profession", 
+            "location", "education_level", "marital_status"
+        ]
     }
 
 
@@ -220,7 +217,13 @@ async def health_check():
     """Health check endpoint."""
     return {
         "status": "healthy" if recommendation_engine is not None else "unhealthy",
-        "engine_loaded": recommendation_engine is not None
+        "engine_loaded": recommendation_engine is not None,
+        "enhanced_demographics": True,
+        "demographic_features": 7,
+        "supported_demographics": [
+            "age", "gender", "income", "profession", 
+            "location", "education_level", "marital_status"
+        ]
     }
 
 
@@ -378,6 +381,10 @@ async def get_recommendations(request: RecommendationRequest):
                 age=user_profile.age,
                 gender=user_profile.gender,
                 income=user_profile.income,
+                profession=user_profile.profession or "Other",
+                location=user_profile.location or "Urban",
+                education_level=user_profile.education_level or "High School",
+                marital_status=user_profile.marital_status or "Single",
                 interaction_history=filtered_interaction_history,
                 k=request.num_recommendations * 2  # Get more to allow for filtering
             )
@@ -390,11 +397,11 @@ async def get_recommendations(request: RecommendationRequest):
                            (f" in category '{request.selected_category}'" if request.selected_category else "")
                 )
             
-            # Use most recent interaction as seed
-            seed_item = filtered_interaction_history[-1]
-            recommendations = recommendation_engine.recommend_items_content_based(
-                seed_item_id=seed_item,
-                k=request.num_recommendations * 2  # Get more to allow for filtering
+            # Use aggregated interaction history for content-based recommendations
+            recommendations = recommendation_engine.recommend_items_content_based_from_history(
+                interaction_history=filtered_interaction_history,
+                k=request.num_recommendations * 2,  # Get more to allow for filtering
+                aggregation_method="weighted_mean"
             )
         
         elif request.recommendation_type == "hybrid":
@@ -402,79 +409,40 @@ async def get_recommendations(request: RecommendationRequest):
                 age=user_profile.age,
                 gender=user_profile.gender,
                 income=user_profile.income,
+                profession=user_profile.profession or "Other",
+                location=user_profile.location or "Urban",
+                education_level=user_profile.education_level or "High School",
+                marital_status=user_profile.marital_status or "Single",
                 interaction_history=filtered_interaction_history,
                 k=request.num_recommendations * 2,  # Get more to allow for filtering
                 collaborative_weight=request.collaborative_weight
             )
         
-        elif request.recommendation_type == "enhanced":
-            if enhanced_recommendation_engine is None:
-                raise HTTPException(status_code=503, detail="Enhanced recommendation engine not available")
-            
-            # Check if it's the 128D engine or fallback
-            if hasattr(enhanced_recommendation_engine, 'recommend_items_enhanced'):
-                # 128D Enhanced engine
-                recommendations = enhanced_recommendation_engine.recommend_items_enhanced(
-                    age=user_profile.age,
-                    gender=user_profile.gender,
-                    income=user_profile.income,
-                    interaction_history=filtered_interaction_history,
-                    k=request.num_recommendations * 2,  # Get more to allow for filtering
-                    diversity_weight=0.3 if request.enable_diversity else 0.0,
-                    category_boost=request.category_boost if request.enable_category_boost else 1.0
-                )
-            else:
-                # Fallback enhanced engine
-                recommendations = enhanced_recommendation_engine.recommend_items_enhanced_hybrid(
-                    age=user_profile.age,
-                    gender=user_profile.gender,
-                    income=user_profile.income,
-                    interaction_history=filtered_interaction_history,
-                    k=request.num_recommendations * 2,  # Get more to allow for filtering
-                    collaborative_weight=request.collaborative_weight,
-                    category_boost=request.category_boost,
-                    enable_category_boost=request.enable_category_boost,
-                    enable_diversity=request.enable_diversity
-                )
-        
-        elif request.recommendation_type == "enhanced_128d":
-            if enhanced_recommendation_engine is None or not hasattr(enhanced_recommendation_engine, 'recommend_items_enhanced'):
-                raise HTTPException(status_code=503, detail="Enhanced 128D recommendation engine not available")
-            
-            recommendations = enhanced_recommendation_engine.recommend_items_enhanced(
+        elif request.recommendation_type == "category_boosted":
+            recommendations = recommendation_engine.recommend_items_category_boosted(
                 age=user_profile.age,
                 gender=user_profile.gender,
                 income=user_profile.income,
+                profession=user_profile.profession or "Other",
+                location=user_profile.location or "Urban",
+                education_level=user_profile.education_level or "High School",
+                marital_status=user_profile.marital_status or "Single",
                 interaction_history=filtered_interaction_history,
-                k=request.num_recommendations * 2,  # Get more to allow for filtering
-                diversity_weight=0.3 if request.enable_diversity else 0.0,
-                category_boost=request.category_boost if request.enable_category_boost else 1.0
-            )
-        
-        elif request.recommendation_type == "category_focused":
-            if enhanced_recommendation_engine is None:
-                raise HTTPException(status_code=503, detail="Enhanced recommendation engine not available")
-            
-            recommendations = enhanced_recommendation_engine.recommend_items_category_focused(
-                age=user_profile.age,
-                gender=user_profile.gender,
-                income=user_profile.income,
-                interaction_history=filtered_interaction_history,
-                k=request.num_recommendations * 2,  # Get more to allow for filtering
-                focus_percentage=0.8
+                k=request.num_recommendations * 2  # Get more to allow for filtering
             )
         
         else:
             raise HTTPException(
                 status_code=400, 
-                detail="Invalid recommendation_type. Must be 'collaborative', 'content', 'hybrid', 'enhanced', 'enhanced_128d', or 'category_focused'"
+                detail="Invalid recommendation_type. Must be 'collaborative', 'content', 'hybrid', or 'category_boosted'"
             )
         
         # Apply category filtering to final recommendations if needed
         if request.selected_category:
             recommendations = filter_recommendations_by_category(recommendations, request.selected_category)
-            # Limit to requested number after filtering
-            recommendations = recommendations[:request.num_recommendations]
+        
+        # Always limit to requested number of recommendations
+        recommendations = recommendations[:request.num_recommendations]
         
         # Format response
         formatted_recommendations = []
@@ -543,8 +511,12 @@ async def predict_user_item_rating(request: RatingPredictionRequest):
             age=user_profile.age,
             gender=user_profile.gender,
             income=user_profile.income,
-            interaction_history=user_profile.interaction_history,
-            item_id=request.item_id
+            item_id=request.item_id,
+            profession=user_profile.profession or "Other",
+            location=user_profile.location or "Urban",
+            education_level=user_profile.education_level or "High School",
+            marital_status=user_profile.marital_status or "Single",
+            interaction_history=user_profile.interaction_history
         )
         
         item_info = recommendation_engine._get_item_info(request.item_id)

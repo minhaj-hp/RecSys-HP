@@ -6,6 +6,7 @@ const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 
 // Interaction patterns with realistic ratios
 const INTERACTION_PATTERNS = [
+  { name: 'New User (No History)', views: 0, carts: 0, purchases: 0, isNewUser: true },
   { name: 'Light Browsing', views: 15, carts: 2, purchases: 0 },
   { name: 'Window Shopping', views: 25, carts: 5, purchases: 1 },
   { name: 'Serious Shopper', views: 35, carts: 8, purchases: 3 },
@@ -18,11 +19,15 @@ function App() {
     age: 30,
     gender: 'male',
     income: 50000,
+    profession: 'Technology',
+    location: 'Urban',
+    education_level: "Bachelor's",
+    marital_status: 'Single',
     interaction_history: []
   });
   
   const [recommendationType, setRecommendationType] = useState('hybrid');
-  const [numRecommendations, setNumRecommendations] = useState(100);
+  const [numRecommendations, setNumRecommendations] = useState(10);
   const [collaborativeWeight, setCollaborativeWeight] = useState(0.7);
   
   const [recommendations, setRecommendations] = useState([]);
@@ -301,6 +306,10 @@ function App() {
       age: user.age,
       gender: user.gender,
       income: user.income,
+      profession: user.profession || 'Other',
+      location: user.location || 'Urban',
+      education_level: user.education_level || 'High School',
+      marital_status: user.marital_status || 'Single',
       interaction_history: user.interaction_history.slice(0, 50) // Limit to 50 items
     });
     // Clear any synthetic interactions and expanded states
@@ -443,7 +452,20 @@ function App() {
 
   const handlePatternSelect = (pattern) => {
     setSelectedPattern(pattern);
-    generateRealisticInteractions(pattern);
+    
+    // Handle New User (zero interactions) pattern specially
+    if (pattern.isNewUser) {
+      // Clear all interactions and interaction history for new user
+      setInteractions([]);
+      setUserProfile(prev => ({
+        ...prev,
+        interaction_history: []
+      }));
+      console.log('Selected New User pattern - cleared all interactions');
+    } else {
+      // Generate realistic interactions for other patterns
+      generateRealisticInteractions(pattern);
+    }
   };
 
   const toggleInteractionExpand = (interactionId) => {
@@ -471,6 +493,46 @@ function App() {
   };
 
   const counts = getInteractionCounts();
+
+  // Utility function to normalize percentages to sum to exactly 100%
+  const normalizePercentages = (categoryCounts, totalInteractions) => {
+    if (totalInteractions === 0) return {};
+    
+    const categories = Object.keys(categoryCounts);
+    if (categories.length === 0) return {};
+    
+    // Calculate raw percentages
+    const rawPercentages = {};
+    categories.forEach(category => {
+      rawPercentages[category] = (categoryCounts[category] / totalInteractions) * 100;
+    });
+    
+    // Round all percentages to 1 decimal place
+    const roundedPercentages = {};
+    let totalRounded = 0;
+    categories.forEach(category => {
+      roundedPercentages[category] = Math.round(rawPercentages[category] * 10) / 10;
+      totalRounded += roundedPercentages[category];
+    });
+    
+    // Adjust the largest category to make total exactly 100%
+    const difference = 100.0 - totalRounded;
+    if (Math.abs(difference) > 0.01) {
+      // Find category with largest raw percentage
+      const largestCategory = categories.reduce((max, category) => 
+        rawPercentages[category] > rawPercentages[max] ? category : max
+      );
+      roundedPercentages[largestCategory] = Math.round((roundedPercentages[largestCategory] + difference) * 10) / 10;
+    }
+    
+    // Convert to string with 1 decimal place
+    const normalizedPercentages = {};
+    categories.forEach(category => {
+      normalizedPercentages[category] = roundedPercentages[category].toFixed(1);
+    });
+    
+    return normalizedPercentages;
+  };
 
   // Calculate category percentages from user interactions
   const getCategoryPercentages = () => {
@@ -504,10 +566,7 @@ function App() {
           console.log('Enriched behavioral pattern results:', { categoryCounts, totalInteractions });
 
           if (totalInteractions > 0) {
-            const categoryPercentages = {};
-            Object.keys(categoryCounts).forEach(category => {
-              categoryPercentages[category] = ((categoryCounts[category] / totalInteractions) * 100).toFixed(1);
-            });
+            const categoryPercentages = normalizePercentages(categoryCounts, totalInteractions);
             console.log('Returning enriched behavioral pattern percentages:', categoryPercentages);
             return categoryPercentages;
           }
@@ -522,20 +581,15 @@ function App() {
 
         interactions.forEach(interaction => {
           console.log('Processing interaction:', interaction);
-          if (interaction.category && interaction.category !== 'Unknown') {
-            const category = interaction.category;
-            categoryCounts[category] = (categoryCounts[category] || 0) + 1;
-            totalInteractions++;
-          }
+          const category = interaction.category_code || interaction.category || 'Unknown';
+          categoryCounts[category] = (categoryCounts[category] || 0) + 1;
+          totalInteractions++;
         });
 
         console.log('Synthetic interaction results:', { categoryCounts, totalInteractions });
 
         if (totalInteractions > 0) {
-          const categoryPercentages = {};
-          Object.keys(categoryCounts).forEach(category => {
-            categoryPercentages[category] = ((categoryCounts[category] / totalInteractions) * 100).toFixed(1);
-          });
+          const categoryPercentages = normalizePercentages(categoryCounts, totalInteractions);
           console.log('Returning synthetic percentages:', categoryPercentages);
           return categoryPercentages;
         }
@@ -554,11 +608,7 @@ function App() {
         totalInteractions++;
       });
 
-      const categoryPercentages = {};
-      Object.keys(categoryCounts).forEach(category => {
-        categoryPercentages[category] = ((categoryCounts[category] / totalInteractions) * 100).toFixed(1);
-      });
-
+      const categoryPercentages = normalizePercentages(categoryCounts, totalInteractions);
       return categoryPercentages;
     }
     
@@ -708,7 +758,13 @@ function App() {
                 <div className="real-user-stats">
                   <div className="user-stat">
                     <span className="stat-label">Demographics:</span>
-                    <span className="stat-value">{selectedRealUser.age}yr {selectedRealUser.gender}, ${selectedRealUser.income.toLocaleString()}</span>
+                    <span className="stat-value">
+                      {selectedRealUser.age}yr {selectedRealUser.gender}, ${selectedRealUser.income.toLocaleString()}
+                      {selectedRealUser.profession && ` | ${selectedRealUser.profession}`}
+                      {selectedRealUser.location && ` | ${selectedRealUser.location}`}
+                      {selectedRealUser.education_level && ` | ${selectedRealUser.education_level}`}
+                      {selectedRealUser.marital_status && ` | ${selectedRealUser.marital_status}`}
+                    </span>
                   </div>
                   <div className="user-stat">
                     <span className="stat-label">Behavior Pattern:</span>
@@ -847,6 +903,77 @@ function App() {
               />
             </div>
           </div>
+          
+          {/* New Demographic Features */}
+          <div className="form-row demographic-features">
+            <div className="form-group">
+              <label htmlFor="profession">Profession:</label>
+              <select
+                id="profession"
+                value={userProfile.profession}
+                onChange={(e) => handleProfileChange('profession', e.target.value)}
+                disabled={useRealUsers && selectedRealUser}
+                style={{backgroundColor: useRealUsers && selectedRealUser ? '#f5f5f5' : 'white'}}
+              >
+                <option value="Technology">Technology</option>
+                <option value="Healthcare">Healthcare</option>
+                <option value="Education">Education</option>
+                <option value="Finance">Finance</option>
+                <option value="Retail">Retail</option>
+                <option value="Manufacturing">Manufacturing</option>
+                <option value="Services">Services</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+            
+            <div className="form-group">
+              <label htmlFor="location">Location:</label>
+              <select
+                id="location"
+                value={userProfile.location}
+                onChange={(e) => handleProfileChange('location', e.target.value)}
+                disabled={useRealUsers && selectedRealUser}
+                style={{backgroundColor: useRealUsers && selectedRealUser ? '#f5f5f5' : 'white'}}
+              >
+                <option value="Urban">Urban</option>
+                <option value="Suburban">Suburban</option>
+                <option value="Rural">Rural</option>
+              </select>
+            </div>
+            
+            <div className="form-group">
+              <label htmlFor="education_level">Education Level:</label>
+              <select
+                id="education_level"
+                value={userProfile.education_level}
+                onChange={(e) => handleProfileChange('education_level', e.target.value)}
+                disabled={useRealUsers && selectedRealUser}
+                style={{backgroundColor: useRealUsers && selectedRealUser ? '#f5f5f5' : 'white'}}
+              >
+                <option value="High School">High School</option>
+                <option value="Some College">Some College</option>
+                <option value="Bachelor's">Bachelor's</option>
+                <option value="Master's">Master's</option>
+                <option value="PhD+">PhD+</option>
+              </select>
+            </div>
+            
+            <div className="form-group">
+              <label htmlFor="marital_status">Marital Status:</label>
+              <select
+                id="marital_status"
+                value={userProfile.marital_status}
+                onChange={(e) => handleProfileChange('marital_status', e.target.value)}
+                disabled={useRealUsers && selectedRealUser}
+                style={{backgroundColor: useRealUsers && selectedRealUser ? '#f5f5f5' : 'white'}}
+              >
+                <option value="Single">Single</option>
+                <option value="Married">Married</option>
+                <option value="Divorced">Divorced</option>
+                <option value="Widowed">Widowed</option>
+              </select>
+            </div>
+          </div>
         </div>
 
         {/* Random Behavioral Patterns for Custom Users */}
@@ -979,7 +1106,7 @@ function App() {
                         <div className="category-percentages">
                           {Object.entries(categoryPercentages)
                             .sort((a, b) => parseFloat(b[1]) - parseFloat(a[1]))
-                            .slice(0, 5)
+                            .slice(0, 10)
                             .map(([category, percentage]) => (
                               <div key={category} className="category-item">
                                 <div className="category-bar-container">
@@ -1110,7 +1237,7 @@ function App() {
               )}
               
               {/* Category Analysis for Custom Users */}
-              {(selectedBehavioralPattern || interactions.length > 0 || userProfile.interaction_history.length > 0) && (
+              {(selectedBehavioralPattern || interactions.length > 0 || userProfile.interaction_history.length > 0 || (recommendations.length > 0 && selectedPattern?.isNewUser)) && (
                 <div 
                   key={`category-analysis-${interactions.length}-${selectedBehavioralPattern?.id || 'none'}-${sampleItems.length}`}
                   className="category-analysis"
@@ -1128,7 +1255,7 @@ function App() {
                           {Object.keys(categoryPercentages).length > 0 ? (
                             Object.entries(categoryPercentages)
                               .sort((a, b) => parseFloat(b[1]) - parseFloat(a[1]))
-                              .slice(0, 5)
+                              .slice(0, 10)
                               .map(([category, percentage]) => (
                                 <div key={category} className="category-item">
                                   <div className="category-bar-container">
@@ -1141,6 +1268,23 @@ function App() {
                                   <span className="category-percent">{percentage}%</span>
                                 </div>
                             ))
+                          ) : selectedPattern?.isNewUser ? (
+                            <div className="new-user-category-message">
+                              <div style={{
+                                padding: '20px',
+                                backgroundColor: '#f8f9fa',
+                                border: '2px dashed #6c757d',
+                                borderRadius: '8px',
+                                textAlign: 'center',
+                                color: '#495057'
+                              }}>
+                                <h6 style={{margin: '0 0 8px 0', color: '#343a40'}}>🆕 New User - No History</h6>
+                                <p style={{margin: '0', fontSize: '14px'}}>
+                                  No category preferences yet.<br />
+                                  Recommendations are based on demographics only.
+                                </p>
+                              </div>
+                            </div>
                           ) : (
                             <div className="category-loading">
                               <p>Processing interaction categories...</p>
@@ -1325,18 +1469,24 @@ function App() {
               )}
               
               <h3>Synthetic Interaction Patterns</h3>
-              <p>Generate realistic user behavior patterns with proportional view, cart, and purchase events</p>
+              <p>Generate realistic user behavior patterns with proportional view, cart, and purchase events. Choose "New User" to test cold-start scenarios.</p>
               
               <div className="pattern-buttons">
                 {INTERACTION_PATTERNS.map((pattern, index) => (
                   <button
                     key={index}
-                    className={`pattern-btn ${selectedPattern?.name === pattern.name ? 'active' : ''}`}
+                    className={`pattern-btn ${selectedPattern?.name === pattern.name ? 'active' : ''} ${pattern.isNewUser ? 'new-user-pattern' : ''}`}
                     onClick={() => handlePatternSelect(pattern)}
                   >
                     {pattern.name}
                     <br />
-                    <small>{pattern.views}V • {pattern.carts}C • {pattern.purchases}P</small>
+                    <small>
+                      {pattern.isNewUser ? (
+                        <span style={{fontStyle: 'italic', color: '#6c757d'}}>Cold Start User</span>
+                      ) : (
+                        `${pattern.views}V • ${pattern.carts}C • ${pattern.purchases}P`
+                      )}
+                    </small>
                   </button>
                 ))}
                 <button
@@ -1347,6 +1497,25 @@ function App() {
                   Clear All
                 </button>
               </div>
+              
+              {/* Show informational message for New User pattern */}
+              {selectedPattern?.isNewUser && (
+                <div style={{
+                  backgroundColor: '#e3f2fd', 
+                  border: '1px solid #90caf9', 
+                  borderRadius: '8px', 
+                  padding: '15px', 
+                  margin: '15px 0',
+                  color: '#1565c0'
+                }}>
+                  <h4 style={{margin: '0 0 10px 0', color: '#0d47a1'}}>🆕 New User (Cold Start) Selected</h4>
+                  <p style={{margin: '0', fontSize: '14px', lineHeight: '1.4'}}>
+                    Testing cold-start scenario with no interaction history. 
+                    <br /><strong>Compatible algorithms:</strong> Collaborative ✅, Hybrid ✅ (demographics-based)
+                    <br /><strong>Incompatible:</strong> Content-based ❌, Category-boosted ❌ (require history)
+                  </p>
+                </div>
+              )}
             </>
           )}
 
@@ -1498,11 +1667,10 @@ function App() {
                 value={recommendationType}
                 onChange={(e) => setRecommendationType(e.target.value)}
               >
-                <option value="hybrid">Hybrid</option>
-                <option value="enhanced">🎯 Enhanced Hybrid (Category-Aware)</option>
-                <option value="category_focused">🎯 Category Focused (80% Match)</option>
+                <option value="hybrid">Hybrid (Recommended)</option>
                 <option value="collaborative">Collaborative Filtering</option>
                 <option value="content">Content-Based</option>
+                <option value="category_boosted">📊 Category Boosted (50% from user categories)</option>
               </select>
             </div>
             
@@ -1521,7 +1689,7 @@ function App() {
               </select>
             </div>
             
-            {(recommendationType === 'hybrid' || recommendationType === 'enhanced') && (
+            {recommendationType === 'hybrid' && (
               <div className="form-group">
                 <label htmlFor="collabWeight">Collaborative Weight:</label>
                 <input
@@ -1548,7 +1716,13 @@ function App() {
           
           {recommendationType === 'content' && userProfile.interaction_history.length === 0 && (
             <p style={{color: '#dc3545', marginTop: '10px', fontSize: '14px'}}>
-              Content-based recommendations require interaction history. Please select an interaction pattern above.
+              ⚠️ Content-based recommendations require interaction history. Please select a pattern with interactions above, or choose 'Collaborative' or 'Hybrid' for new users.
+            </p>
+          )}
+          
+          {recommendationType === 'category_boosted' && userProfile.interaction_history.length === 0 && (
+            <p style={{color: '#dc3545', marginTop: '10px', fontSize: '14px'}}>
+              ⚠️ Category-boosted recommendations require interaction history to analyze preferences. Please select a pattern with interactions above, or choose 'Collaborative' for new users.
             </p>
           )}
         </div>
@@ -1567,7 +1741,7 @@ function App() {
             
             <div className="stats">
               <strong>User Profile:</strong> {userProfile.age}yr {userProfile.gender}, 
-              ${userProfile.income.toLocaleString()} income
+              ${userProfile.income.toLocaleString()} income, {userProfile.profession}, {userProfile.location}, {userProfile.education_level}, {userProfile.marital_status}
               {selectedCategory && (
                 <span> | <strong>Category Filter:</strong> <span className="category-filter-display">{selectedCategory.replace(/\./g, ' > ')}</span></span>
               )}

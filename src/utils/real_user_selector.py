@@ -93,22 +93,58 @@ class RealUserSelector:
         """
         print(f"Selecting {n} real users with at least {min_interactions} interactions...")
         
-        # Filter users with sufficient interactions
-        active_users = []
+        # Filter users with sufficient interactions, separating by interaction count
+        high_interaction_users = []  # >14 interactions
+        low_interaction_users = []   # min_interactions to 14 interactions
+        
         for _, user in self.users_df.iterrows():
             user_id = user['user_id']
-            if (user_id in self.user_stats and 
-                self.user_stats[user_id]['total_interactions'] >= min_interactions):
-                active_users.append(user)
+            if user_id in self.user_stats:
+                interaction_count = self.user_stats[user_id]['total_interactions']
+                if interaction_count >= min_interactions:
+                    if interaction_count > 14:
+                        high_interaction_users.append(user)
+                    else:
+                        low_interaction_users.append(user)
         
-        print(f"Found {len(active_users)} active users with >={min_interactions} interactions")
+        print(f"Found {len(high_interaction_users)} high-interaction users (>14) and {len(low_interaction_users)} low-interaction users ({min_interactions}-14)")
         
-        # Randomly sample n users
-        if len(active_users) < n:
-            print(f"Warning: Only {len(active_users)} users available, returning all")
-            selected_users = active_users
+        # Ensure more than half have >14 interactions
+        min_high_interaction = (n // 2) + 1  # More than 50%
+        
+        selected_users = []
+        
+        # First, select from high-interaction users (prioritize these)
+        if len(high_interaction_users) >= min_high_interaction:
+            selected_high = random.sample(high_interaction_users, min_high_interaction)
         else:
-            selected_users = random.sample(active_users, n)
+            print(f"Warning: Only {len(high_interaction_users)} high-interaction users available, using all")
+            selected_high = high_interaction_users
+        
+        selected_users.extend(selected_high)
+        remaining_slots = n - len(selected_high)
+        
+        # Fill remaining slots with low-interaction users if available
+        if remaining_slots > 0 and len(low_interaction_users) > 0:
+            if len(low_interaction_users) >= remaining_slots:
+                selected_low = random.sample(low_interaction_users, remaining_slots)
+            else:
+                selected_low = low_interaction_users
+            selected_users.extend(selected_low)
+        
+        # If we still need more users, add remaining high-interaction users
+        remaining_slots = n - len(selected_users)
+        if remaining_slots > 0:
+            remaining_high = [user for user in high_interaction_users if user not in selected_users]
+            if len(remaining_high) >= remaining_slots:
+                selected_users.extend(random.sample(remaining_high, remaining_slots))
+            else:
+                selected_users.extend(remaining_high)
+        
+        print(f"Selected {len(selected_users)} total users: {len([u for u in selected_users if self.user_stats[u['user_id']]['total_interactions'] > 14])} high-interaction (>14), {len([u for u in selected_users if self.user_stats[u['user_id']]['total_interactions'] <= 14])} low-interaction (≤14)")
+        
+        if len(selected_users) < n:
+            print(f"Warning: Only {len(selected_users)} users available, returning all")
         
         # Build user profiles with real data
         real_user_profiles = []
@@ -124,6 +160,10 @@ class RealUserSelector:
                 'age': int(user['age']),
                 'gender': user['gender'],
                 'income': int(user['income']),
+                'profession': user.get('profession', 'Other'),
+                'location': user.get('location', 'Urban'),
+                'education_level': user.get('education_level', 'High School'),
+                'marital_status': user.get('marital_status', 'Single'),
                 'interaction_history': stats['unique_items'][:50],  # Limit to 50 most recent
                 'interaction_stats': {
                     'total_interactions': stats['total_interactions'],

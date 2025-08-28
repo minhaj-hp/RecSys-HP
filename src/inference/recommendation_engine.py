@@ -61,6 +61,50 @@ class RecommendationEngine:
         category = np.digitize([income], self.income_thresholds[1:-1])[0]
         return min(max(category, 0), 4)
     
+    def categorize_profession(self, profession: str) -> int:
+        """Categorize profession into numeric categories."""
+        profession_map = {
+            "Technology": 0,
+            "Healthcare": 1, 
+            "Education": 2,
+            "Finance": 3,
+            "Retail": 4,
+            "Manufacturing": 5,
+            "Services": 6,
+            "Other": 7
+        }
+        return profession_map.get(profession, 7)  # Default to "Other"
+    
+    def categorize_location(self, location: str) -> int:
+        """Categorize location into numeric categories."""
+        location_map = {
+            "Urban": 0,
+            "Suburban": 1,
+            "Rural": 2
+        }
+        return location_map.get(location, 0)  # Default to "Urban"
+    
+    def categorize_education_level(self, education: str) -> int:
+        """Categorize education level into numeric categories."""
+        education_map = {
+            "High School": 0,
+            "Some College": 1,
+            "Bachelor's": 2,
+            "Master's": 3,
+            "PhD+": 4
+        }
+        return education_map.get(education, 0)  # Default to "High School"
+    
+    def categorize_marital_status(self, marital_status: str) -> int:
+        """Categorize marital status into numeric categories."""
+        marital_map = {
+            "Single": 0,
+            "Married": 1,
+            "Divorced": 2,
+            "Widowed": 3
+        }
+        return marital_map.get(marital_status, 0)  # Default to "Single"
+    
     def _load_all_components(self):
         """Load all required components for inference."""
         
@@ -139,6 +183,10 @@ class RecommendationEngine:
             'age': tf.constant([2]),  # Adult category (26-35)
             'gender': tf.constant([1]),  # Male
             'income': tf.constant([2]),  # Middle income category
+            'profession': tf.constant([0]),  # Technology
+            'location': tf.constant([0]),  # Urban
+            'education_level': tf.constant([2]),  # Bachelor's
+            'marital_status': tf.constant([1]),  # Married
             'item_history_embeddings': tf.constant([[[0.0] * 128] * 50])  # Changed from 64 to 128
         }
         _ = self.user_tower(dummy_input)
@@ -195,6 +243,10 @@ class RecommendationEngine:
                             age: int,
                             gender: str,
                             income: float,
+                            profession: str = "Other",
+                            location: str = "Urban",
+                            education_level: str = "High School",
+                            marital_status: str = "Single",
                             interaction_history: List[int] = None) -> Dict[str, tf.Tensor]:
         """Prepare user features for inference."""
         
@@ -204,9 +256,13 @@ class RecommendationEngine:
         # Convert gender
         gender_numeric = 1 if gender.lower() == 'male' else 0
         
-        # Categorize age and income
+        # Categorize all demographics
         age_category = self.categorize_age(age)
         income_category = self.categorize_income(income)
+        profession_category = self.categorize_profession(profession)
+        location_category = self.categorize_location(location)
+        education_category = self.categorize_education_level(education_level)
+        marital_category = self.categorize_marital_status(marital_status)
         
         # Get item embeddings for history
         history_embeddings = []
@@ -235,6 +291,10 @@ class RecommendationEngine:
             'age': tf.constant([age_category]),  # Categorical age (0-5)
             'gender': tf.constant([gender_numeric]),  # Categorical gender (0-1)
             'income': tf.constant([income_category]),  # Categorical income (0-4)
+            'profession': tf.constant([profession_category]),  # Categorical profession (0-7)
+            'location': tf.constant([location_category]),  # Categorical location (0-2)
+            'education_level': tf.constant([education_category]),  # Categorical education (0-4)
+            'marital_status': tf.constant([marital_category]),  # Categorical marital status (0-3)
             'item_history_embeddings': tf.constant([history_embeddings])
         }
         
@@ -275,13 +335,76 @@ class RecommendationEngine:
                           age: int,
                           gender: str,
                           income: float,
+                          profession: str = "Other",
+                          location: str = "Urban",
+                          education_level: str = "High School",
+                          marital_status: str = "Single",
                           interaction_history: List[int] = None) -> np.ndarray:
         """Get user embedding from user tower."""
         
-        user_features = self.prepare_user_features(age, gender, income, interaction_history)
+        user_features = self.prepare_user_features(age, gender, income, profession, location, education_level, marital_status, interaction_history)
         user_embedding = self.user_tower(user_features, training=False)
         
         return user_embedding.numpy()[0]
+    
+    def get_user_embedding_enhanced(self, 
+                                  age: int,
+                                  gender: str, 
+                                  income: float,
+                                  profession: str = "Other",
+                                  location: str = "Urban", 
+                                  education_level: str = "High School",
+                                  marital_status: str = "Single",
+                                  interaction_history: List[int] = None) -> np.ndarray:
+        """Enhanced user embedding that handles zero interactions better."""
+        
+        # Get base embedding
+        base_embedding = self.get_user_embedding(
+            age, gender, income, profession, location, education_level, marital_status, interaction_history
+        )
+        
+        # Check if this is a zero-interaction user
+        has_interactions = interaction_history and len(interaction_history) > 0
+        
+        if not has_interactions:
+            # For zero interactions, amplify the demographic component
+            # This is a heuristic fix until we retrain the model
+            
+            # Create demographic-enhanced embedding
+            demographic_mask = np.ones_like(base_embedding)
+            
+            # Amplify first 50% of dimensions (likely demographic-influenced)
+            mid_point = len(base_embedding) // 2
+            demographic_mask[:mid_point] *= 3.0  # Strong amplification
+            
+            # Reduce influence of latter dimensions (likely history-influenced) 
+            demographic_mask[mid_point:] *= 0.2  # Strong reduction
+            
+            enhanced_embedding = base_embedding * demographic_mask
+            
+            # Add demographic-specific variation to differentiate profiles
+            demographic_hash = (
+                age * 1000 + 
+                (1 if gender.lower() == 'male' else 0) * 100 +
+                int(income / 10000) * 10 +
+                self.categorize_profession(profession) * 7 +
+                self.categorize_location(location) * 3 +
+                self.categorize_education_level(education_level) * 5 +
+                self.categorize_marital_status(marital_status) * 2
+            )
+            
+            np.random.seed(demographic_hash % 2**32)  # Reproducible noise
+            demographic_noise = np.random.normal(0, 0.02, base_embedding.shape)  # Increased noise
+            enhanced_embedding += demographic_noise
+            
+            # Renormalize
+            enhanced_embedding = enhanced_embedding / np.linalg.norm(enhanced_embedding)
+            
+            print(f"Enhanced embedding for zero interactions: age={age}, gender={gender}, profession={profession}")
+            
+            return enhanced_embedding.astype(np.float32)
+        
+        return base_embedding
     
     def get_item_embedding(self, item_id: int) -> Optional[np.ndarray]:
         """Get item embedding from FAISS index or item tower."""
@@ -301,14 +424,18 @@ class RecommendationEngine:
                                    age: int,
                                    gender: str,
                                    income: float,
+                                   profession: str = "Other",
+                                   location: str = "Urban",
+                                   education_level: str = "High School",
+                                   marital_status: str = "Single",
                                    interaction_history: List[int] = None,
                                    k: int = 10,
                                    exclude_history: bool = True,
                                    category_boost: float = 1.3) -> List[Tuple[int, float, Dict]]:
         """Generate recommendations using collaborative filtering with category awareness."""
         
-        # Get user embedding
-        user_embedding = self.get_user_embedding(age, gender, income, interaction_history)
+        # Get enhanced user embedding (better for zero interactions)
+        user_embedding = self.get_user_embedding_enhanced(age, gender, income, profession, location, education_level, marital_status, interaction_history)
         
         # Find similar items using FAISS (get more candidates for boosting)
         similar_items = self.faiss_index.search_by_embedding(user_embedding, k * 4)
@@ -353,6 +480,153 @@ class RecommendationEngine:
             recommendations.append((item_id, score, item_info))
         
         return recommendations
+    
+    def _aggregate_user_history_embedding(self, 
+                                        interaction_history: List[int],
+                                        aggregation_method: str = "weighted_mean") -> Optional[np.ndarray]:
+        """Aggregate user's interaction history into a single embedding vector."""
+        
+        if not interaction_history:
+            return None
+        
+        # Get embeddings for items in history
+        item_embeddings = []
+        valid_items = []
+        
+        for item_id in interaction_history:
+            embedding = self.faiss_index.get_item_embedding(item_id)
+            if embedding is not None:
+                item_embeddings.append(embedding)
+                valid_items.append(item_id)
+        
+        if not item_embeddings:
+            print(f"No valid embeddings found for interaction history: {interaction_history}")
+            return None
+        
+        item_embeddings = np.array(item_embeddings)
+        print(f"Aggregating {len(item_embeddings)} item embeddings using {aggregation_method}")
+        
+        # Apply aggregation method
+        if aggregation_method == "mean":
+            # Simple mean pooling
+            aggregated = np.mean(item_embeddings, axis=0)
+            
+        elif aggregation_method == "weighted_mean":
+            # Weight recent interactions higher (exponential decay)
+            weights = np.exp(np.linspace(-1, 0, len(item_embeddings)))  # More recent = higher weight
+            weights = weights / np.sum(weights)  # Normalize weights
+            aggregated = np.average(item_embeddings, axis=0, weights=weights)
+            print(f"Applied weighted mean with weights: {weights[-3:]} (showing last 3)")
+            
+        elif aggregation_method == "max":
+            # Element-wise maximum pooling
+            aggregated = np.max(item_embeddings, axis=0)
+            
+        else:
+            raise ValueError(f"Unknown aggregation method: {aggregation_method}")
+        
+        # L2 normalize the aggregated embedding
+        aggregated = aggregated / np.linalg.norm(aggregated)
+        
+        return aggregated.astype('float32')
+    
+    def recommend_items_content_based_from_history(self,
+                                                 interaction_history: List[int],
+                                                 k: int = 10,
+                                                 aggregation_method: str = "weighted_mean",
+                                                 same_category_ratio: float = None) -> List[Tuple[int, float, Dict]]:
+        """Generate recommendations using content-based filtering from aggregated user history."""
+        
+        # Aggregate user's interaction history
+        aggregated_embedding = self._aggregate_user_history_embedding(
+            interaction_history, aggregation_method
+        )
+        
+        if aggregated_embedding is None:
+            print("Could not create aggregated embedding from interaction history")
+            return []
+        
+        if same_category_ratio is None:
+            # Direct ANN search with aggregated embedding
+            similar_items = self.faiss_index.search_by_embedding(aggregated_embedding, k)
+            recommendations = []
+            
+            # Filter out items already in interaction history
+            interaction_set = set(interaction_history)
+            
+            for item_id, score in similar_items:
+                if item_id not in interaction_set:  # Exclude already interacted items
+                    item_info = self._get_item_info(item_id)
+                    recommendations.append((item_id, score, item_info))
+                    
+                    if len(recommendations) >= k:
+                        break
+            
+            print(f"Found {len(recommendations)} content-based recommendations from aggregated history")
+            return recommendations
+        
+        else:
+            # Category-aware approach with aggregated embedding
+            print(f"Finding similar items with {same_category_ratio*100}% category constraint from aggregated history")
+            
+            # Analyze user's category preferences from interaction history
+            user_categories = {}
+            total_interactions = len(interaction_history)
+            
+            for item_id in interaction_history:
+                item_info = self._get_item_info(item_id)
+                category = item_info.get('category_code', '')
+                if category:
+                    user_categories[category] = user_categories.get(category, 0) + 1
+            
+            # Convert to percentages
+            for category in user_categories:
+                user_categories[category] = user_categories[category] / total_interactions
+            
+            print(f"User category preferences: {user_categories}")
+            
+            # Get more candidates for category filtering
+            candidate_items = self.faiss_index.search_by_embedding(aggregated_embedding, k * 3)
+            interaction_set = set(interaction_history)
+            
+            # Separate by category alignment with user preferences
+            preferred_category_items = []
+            other_category_items = []
+            
+            for item_id, score in candidate_items:
+                if item_id in interaction_set:
+                    continue  # Skip already interacted items
+                    
+                item_info = self._get_item_info(item_id)
+                item_category = item_info.get('category_code', '')
+                
+                # Check if item category matches user's preferred categories
+                if item_category in user_categories:
+                    preferred_category_items.append((item_id, score, item_info))
+                else:
+                    other_category_items.append((item_id, score, item_info))
+            
+            # Calculate target distribution
+            preferred_count = int(k * same_category_ratio)
+            other_count = k - preferred_count
+            
+            print(f"Target: {preferred_count} from preferred categories, {other_count} for exploration")
+            
+            # Build balanced recommendations
+            recommendations = []
+            recommendations.extend(preferred_category_items[:preferred_count])
+            recommendations.extend(other_category_items[:other_count])
+            
+            # Fill remaining slots with best available items
+            if len(recommendations) < k:
+                remaining_items = (preferred_category_items[preferred_count:] + 
+                                 other_category_items[other_count:])
+                remaining_items.sort(key=lambda x: x[1], reverse=True)  # Sort by score
+                needed = k - len(recommendations)
+                recommendations.extend(remaining_items[:needed])
+            
+            print(f"Final recommendations: {len(recommendations)} items")
+            return recommendations[:k]
     
     def recommend_items_content_based(self,
                                     seed_item_id: int,
@@ -431,6 +705,10 @@ class RecommendationEngine:
                              age: int,
                              gender: str,
                              income: float,
+                             profession: str = "Other",
+                             location: str = "Urban",
+                             education_level: str = "High School",
+                             marital_status: str = "Single",
                              interaction_history: List[int] = None,
                              k: int = 10,
                              collaborative_weight: float = 0.7) -> List[Tuple[int, float, Dict]]:
@@ -438,15 +716,16 @@ class RecommendationEngine:
         
         # Get collaborative recommendations
         collab_recs = self.recommend_items_collaborative(
-            age, gender, income, interaction_history, k * 2
+            age, gender, income, profession, location, education_level, marital_status, interaction_history, k * 2
         )
         
-        # Get content-based recommendations from recent interactions
+        # Get content-based recommendations from aggregated user history
         content_recs = []
         if interaction_history:
-            # Use most recent item as seed
-            recent_item = interaction_history[-1]
-            content_recs = self.recommend_items_content_based(recent_item, k)
+            # Use aggregated history embedding instead of single recent item
+            content_recs = self.recommend_items_content_based_from_history(
+                interaction_history, k, aggregation_method="weighted_mean"
+            )
         
         # Combine recommendations with weighted scores
         item_scores = {}
@@ -484,6 +763,254 @@ class RecommendationEngine:
         
         return hybrid_recommendations[:k]
     
+    def recommend_items_category_boosted(self,
+                                       age: int,
+                                       gender: str,
+                                       income: float,
+                                       profession: str = "Other",
+                                       location: str = "Urban",
+                                       education_level: str = "High School",
+                                       marital_status: str = "Single",
+                                       interaction_history: List[int] = None,
+                                       k: int = 10,
+                                       exclude_history: bool = True) -> List[Tuple[int, float, Dict]]:
+        """Generate category-boosted recommendations ensuring 50% from user's interacted categories."""
+        
+        if not interaction_history or len(interaction_history) == 0:
+            # Fallback to collaborative filtering if no interaction history
+            return self.recommend_items_collaborative(
+                age, gender, income, profession, location, education_level, marital_status, 
+                interaction_history, k, exclude_history
+            )
+        
+        # Step 1: Calculate category percentages from interaction history
+        category_percentages = self._calculate_category_percentages(interaction_history)
+        
+        if not category_percentages:
+            # Fallback if no categories found
+            return self.recommend_items_collaborative(
+                age, gender, income, profession, location, education_level, marital_status, 
+                interaction_history, k, exclude_history
+            )
+        
+        # Step 2: Get enhanced user embedding and do wide search (increased for better subcategory coverage)
+        user_embedding = self.get_user_embedding_enhanced(age, gender, income, profession, location, education_level, marital_status, interaction_history)
+        similar_items = self.faiss_index.search_by_embedding(user_embedding, k * 10)  # Increased from k*6 to k*10
+        
+        # Step 3: Organize candidates by subcategory with parent fallback
+        category_candidates = {category: [] for category in category_percentages.keys()}
+        parent_category_mapping = {}  # Track parent categories for fallback
+        other_candidates = []
+        history_set = set(interaction_history) if exclude_history else set()
+        
+        # Build parent category mapping for fallback
+        for subcategory in category_percentages.keys():
+            if '.' in subcategory:
+                parent = subcategory.split('.')[0]
+                if parent not in parent_category_mapping:
+                    parent_category_mapping[parent] = []
+                parent_category_mapping[parent].append(subcategory)
+        
+        for item_id, score in similar_items:
+            if item_id in history_set:
+                continue
+                
+            # Get item category
+            item_row = self.items_df[self.items_df['product_id'] == item_id]
+            if len(item_row) > 0:
+                full_item_category = item_row.iloc[0]['category_code']
+                
+                # Extract 2-level subcategory for matching
+                if '.' in full_item_category:
+                    category_parts = full_item_category.split('.')
+                    if len(category_parts) >= 2:
+                        item_subcategory = f"{category_parts[0]}.{category_parts[1]}"
+                    else:
+                        item_subcategory = category_parts[0]
+                else:
+                    item_subcategory = full_item_category
+                
+                # Try exact subcategory match first
+                if item_subcategory in category_percentages:
+                    category_candidates[item_subcategory].append((item_id, score))
+                else:
+                    # Fallback: try parent category match
+                    parent_category = item_subcategory.split('.')[0] if '.' in item_subcategory else item_subcategory
+                    matched = False
+                    
+                    if parent_category in parent_category_mapping:
+                        # Add to the first subcategory of this parent (round-robin could be improved later)
+                        target_subcategory = parent_category_mapping[parent_category][0]
+                        category_candidates[target_subcategory].append((item_id, score))
+                        matched = True
+                    
+                    if not matched:
+                        other_candidates.append((item_id, score))
+        
+        # Step 4: Calculate target counts for each subcategory (50% distributed proportionally)
+        category_target_count = max(1, k // 2)  # At least 50% from user categories
+        
+        # Calculate proportional distribution with proper rounding
+        category_counts = self._calculate_proportional_distribution(
+            category_percentages, category_target_count
+        )
+        
+        # Step 5: Select items with round-robin filling and rebalancing
+        selected_recommendations = []
+        
+        # Fill from user's categories with rebalancing for insufficient candidates
+        actual_selections = {}
+        unused_allocations = {}
+        
+        for category, target_count in category_counts.items():
+            candidates = sorted(category_candidates[category], key=lambda x: x[1], reverse=True)
+            available_count = len(candidates)
+            selected_count = min(target_count, available_count)
+            
+            print(f"[DEBUG] Category {category}: target={target_count}, available={available_count}, selected={selected_count}")
+            
+            actual_selections[category] = selected_count
+            if selected_count < target_count:
+                unused_allocations[category] = target_count - selected_count
+            
+            # Select items from this category
+            for i in range(selected_count):
+                item_id, score = candidates[i]
+                item_info = self._get_item_info(item_id)
+                selected_recommendations.append((item_id, score, item_info))
+        
+        # Step 6: Redistribute unused allocations proportionally
+        total_unused = sum(unused_allocations.values())
+        if total_unused > 0:
+            print(f"[DEBUG] Redistributing {total_unused} unused slots")
+            
+            # Find categories with remaining candidates for redistribution
+            categories_with_extras = {}
+            for category, candidates in category_candidates.items():
+                used_count = actual_selections.get(category, 0)
+                available_extras = len(candidates) - used_count
+                if available_extras > 0:
+                    categories_with_extras[category] = available_extras
+            
+            # Redistribute based on original proportions and availability
+            redistributed = 0
+            for category in sorted(categories_with_extras.keys(), key=lambda c: category_percentages.get(c, 0), reverse=True):
+                if redistributed >= total_unused:
+                    break
+                
+                extra_slots = min(unused_allocations.get(category, 0) + 1, categories_with_extras[category])
+                candidates = sorted(category_candidates[category], key=lambda x: x[1], reverse=True)
+                used_count = actual_selections.get(category, 0)
+                
+                for i in range(used_count, min(used_count + extra_slots, len(candidates))):
+                    if redistributed >= total_unused:
+                        break
+                    item_id, score = candidates[i]
+                    item_info = self._get_item_info(item_id)
+                    selected_recommendations.append((item_id, score, item_info))
+                    redistributed += 1
+                    
+        # Step 7: Fill remaining slots with diverse recommendations
+        remaining_slots = k - len(selected_recommendations)
+        if remaining_slots > 0:
+            # Collect all unused candidates (both from user categories and other categories)
+            all_remaining = []
+            
+            # Add unused items from user categories
+            for category, candidates in category_candidates.items():
+                used_count = len([rec for rec in selected_recommendations if rec[2].get('category_code', '').startswith(category.split('.')[0])])
+                sorted_candidates = sorted(candidates, key=lambda x: x[1], reverse=True)
+                for i in range(used_count, len(sorted_candidates)):
+                    all_remaining.append(sorted_candidates[i])
+            
+            # Add items from other categories
+            all_remaining.extend(other_candidates)
+            
+            # Sort by score and take best remaining
+            all_remaining.sort(key=lambda x: x[1], reverse=True)
+            
+            print(f"[DEBUG] Filling {remaining_slots} remaining slots from {len(all_remaining)} candidates")
+            
+            for i in range(min(remaining_slots, len(all_remaining))):
+                item_id, score = all_remaining[i]
+                item_info = self._get_item_info(item_id)
+                selected_recommendations.append((item_id, score, item_info))
+        
+        # Step 7: Sort final recommendations by score and return top k
+        selected_recommendations.sort(key=lambda x: x[1], reverse=True)
+        return selected_recommendations[:k]
+    
+    def _calculate_category_percentages(self, interaction_history: List[int]) -> Dict[str, float]:
+        """Calculate subcategory percentages from interaction history (2-level depth)."""
+        if not interaction_history:
+            return {}
+        
+        category_counts = {}
+        total_interactions = 0
+        
+        for item_id in interaction_history:
+            item_row = self.items_df[self.items_df['product_id'] == item_id]
+            if len(item_row) > 0:
+                full_category = item_row.iloc[0]['category_code']
+                
+                # Use 2-level subcategory (e.g., "computers.components" from "computers.components.memory")
+                if '.' in full_category:
+                    category_parts = full_category.split('.')
+                    if len(category_parts) >= 2:
+                        subcategory = f"{category_parts[0]}.{category_parts[1]}"
+                    else:
+                        subcategory = category_parts[0]  # Fallback to top-level if only one part
+                else:
+                    subcategory = full_category
+                
+                category_counts[subcategory] = category_counts.get(subcategory, 0) + 1
+                total_interactions += 1
+        
+        # Convert to percentages
+        category_percentages = {}
+        for category, count in category_counts.items():
+            category_percentages[category] = (count / total_interactions) * 100
+        
+        return category_percentages
+    
+    def _calculate_proportional_distribution(self, category_percentages: Dict[str, float], 
+                                           total_target: int) -> Dict[str, int]:
+        """Calculate proportional distribution with proper rounding and no minimum distortion."""
+        if not category_percentages or total_target <= 0:
+            return {}
+        
+        # Calculate raw allocations (without minimum guarantee)
+        total_percentage = sum(category_percentages.values())
+        raw_allocations = {}
+        remainders = {}
+        
+        for category, percentage in category_percentages.items():
+            if total_percentage > 0:
+                raw_allocation = (percentage / total_percentage) * total_target
+                raw_allocations[category] = int(raw_allocation)  # Floor
+                remainders[category] = raw_allocation - int(raw_allocation)  # Remainder
+            else:
+                raw_allocations[category] = 0
+                remainders[category] = 0
+        
+        # Distribute remaining slots based on largest remainders
+        allocated_so_far = sum(raw_allocations.values())
+        remaining_slots = total_target - allocated_so_far
+        
+        # Sort categories by remainder (largest first) to distribute remaining slots
+        sorted_by_remainder = sorted(remainders.items(), key=lambda x: x[1], reverse=True)
+        
+        for i in range(remaining_slots):
+            if i < len(sorted_by_remainder):
+                category_to_increment = sorted_by_remainder[i][0]
+                raw_allocations[category_to_increment] += 1
+        
+        # Filter out zero allocations (no artificial minimum guarantee)
+        final_allocations = {cat: count for cat, count in raw_allocations.items() if count > 0}
+        
+        print(f"[DEBUG] Proportional distribution: target={total_target}, allocations={final_allocations}")
+        return final_allocations
+    
     def _get_item_info(self, item_id: int) -> Dict:
         """Get item metadata."""
         
@@ -512,6 +1039,10 @@ class RecommendationEngine:
                       gender: str,
                       income: float,
                       item_id: int,
+                      profession: str = "Other",
+                      location: str = "Urban",
+                      education_level: str = "High School",
+                      marital_status: str = "Single",
                       interaction_history: List[int] = None) -> float:
         """Predict rating for a specific user-item pair."""
         
@@ -519,7 +1050,7 @@ class RecommendationEngine:
             return 0.5  # Default prediction
         
         # Prepare user features
-        user_features = self.prepare_user_features(age, gender, income, interaction_history)
+        user_features = self.prepare_user_features(age, gender, income, profession, location, education_level, marital_status, interaction_history)
         
         # Prepare item features
         if item_id not in self.data_processor.item_vocab:
@@ -552,6 +1083,10 @@ def main():
         'age': 32,
         'gender': 'male',
         'income': 75000,
+        'profession': 'Technology',
+        'location': 'Urban',
+        'education_level': "Bachelor's",
+        'marital_status': 'Married',
         'interaction_history': [1000978, 1001588, 1001618]  # Sample item IDs
     }
     
@@ -559,20 +1094,28 @@ def main():
     print(f"Age: {demo_user['age']}")
     print(f"Gender: {demo_user['gender']}")
     print(f"Income: ${demo_user['income']:,}")
+    print(f"Profession: {demo_user['profession']}")
+    print(f"Location: {demo_user['location']}")
+    print(f"Education: {demo_user['education_level']}")
+    print(f"Marital Status: {demo_user['marital_status']}")
     print(f"Interaction history: {demo_user['interaction_history']}")
     
     # Generate collaborative recommendations
-    print("\n=== Collaborative Filtering Recommendations ===")
-    collab_recs = engine.recommend_items_collaborative(**demo_user, k=5)
+    print("\n=== Collaborative Filtering Recommendations ===") 
+    # Extract demographics and history separately to avoid conflicts
+    demo_kwargs = {k: v for k, v in demo_user.items() if k != 'interaction_history'}
+    collab_recs = engine.recommend_items_collaborative(
+        **demo_kwargs, interaction_history=demo_user['interaction_history'], k=5
+    )
     
     for i, (item_id, score, info) in enumerate(collab_recs, 1):
         print(f"{i}. Item {item_id}: {info['brand']} - ${info['price']:.2f} (Score: {score:.4f})")
     
-    # Generate content-based recommendations
-    print("\n=== Content-Based Recommendations (similar to recent item) ===")
+    # Generate content-based recommendations from aggregated history
+    print("\n=== Content-Based Recommendations (from aggregated user history) ===")
     if demo_user['interaction_history']:
-        content_recs = engine.recommend_items_content_based(
-            seed_item_id=demo_user['interaction_history'][-1], k=5
+        content_recs = engine.recommend_items_content_based_from_history(
+            interaction_history=demo_user['interaction_history'], k=5
         )
         
         for i, (item_id, score, info) in enumerate(content_recs, 1):
@@ -580,7 +1123,9 @@ def main():
     
     # Generate hybrid recommendations
     print("\n=== Hybrid Recommendations ===")
-    hybrid_recs = engine.recommend_items_hybrid(**demo_user, k=5)
+    hybrid_recs = engine.recommend_items_hybrid(
+        **demo_kwargs, interaction_history=demo_user['interaction_history'], k=5
+    )
     
     for i, (item_id, score, info) in enumerate(hybrid_recs, 1):
         print(f"{i}. Item {item_id}: {info['brand']} - ${info['price']:.2f} (Score: {score:.4f})")

@@ -1,6 +1,6 @@
 # Advanced Two-Tower Recommendation System
 
-A production-ready recommendation system implementation using TensorFlow Recommenders with an enhanced two-tower architecture. This system provides personalized item recommendations through collaborative filtering, content-based filtering, and hybrid approaches, featuring categorical demographics, curriculum learning, and advanced training strategies.
+A production-ready recommendation system implementation using TensorFlow Recommenders with an enhanced two-tower architecture. This system provides personalized item recommendations through collaborative filtering, **aggregated history content-based filtering**, and hybrid approaches, featuring categorical demographics, curriculum learning, and advanced training strategies.
 
 ## 🎯 Project Overview
 
@@ -11,7 +11,7 @@ This recommendation system addresses the challenge of providing personalized ite
 - **🧠 Enhanced Two-Tower Architecture**: 128D embeddings with temperature scaling and contrastive learning
 - **📚 Curriculum Learning**: Progressive training strategy for improved convergence
 - **⚡ Real-time Inference**: Sub-100ms recommendation serving with FAISS indexing
-- **🔄 Multi-strategy Recommendations**: Collaborative, content-based, and hybrid approaches
+- **🔄 Multi-strategy Recommendations**: Collaborative, **aggregated history content-based**, and hybrid approaches
 - **🎪 Category-Aware Boosting**: Enhanced personalization through user preference alignment
 - **🔍 Interactive Similar Items**: Click-to-explore with 60/40 category-balanced discovery
 - **📊 Comprehensive Analysis**: Quality metrics and performance evaluation tools
@@ -70,11 +70,22 @@ The system implements a sophisticated two-tower neural network architecture opti
 - **Stage 3**: Complex cases (long history) - 67th+ percentile
 - **Adaptive Learning Rates**: Decrease as stages progress for stability
 
-### 5. Category-Aware Recommendation Engine 🎪
+### 5. Aggregated History Content-Based Filtering 🔄
+- **Revolutionary Approach**: Uses aggregated user interaction history instead of single-item similarity
+- **Multiple Aggregation Methods**: 
+  - **Weighted Mean**: Recent interactions weighted higher (exponential decay)
+  - **Simple Mean**: Equal weighting of all interactions
+  - **Max Pooling**: Element-wise maximum of embeddings
+- **ANN Search**: Direct similarity search using FAISS with aggregated user profile
+- **Enhanced Personalization**: Captures complete user preference profile, not just recent item
+- **Category-Aware**: Analyzes user's full category distribution for balanced recommendations
+
+### 6. Category-Aware Recommendation Engine 🎪
 - **Enhanced Hybrid Recommendations**: Category boosting based on user preferences
 - **Category Alignment Analysis**: Measures personalization effectiveness
 - **Diversity Controls**: Balanced category representation in recommendations
-- **Explanation Generation**: Detailed reasoning for recommendation choices
+- **Subcategory Precision**: 2-level category matching (e.g., "computers.components")
+- **Comprehensive Analysis Tools**: Multi-algorithm comparison and alignment scoring
 
 ## 📁 Project Structure
 
@@ -134,10 +145,8 @@ RecSys-HP/
 ├── 🚀 Training Scripts                   # Multiple training approaches
 │   ├── run_training_pipeline.py         # Main training orchestration
 │   ├── run_2phase_training.py           # 2-phase training approach
-│   ├── run_joint_training.py            # Joint training approach
-│   └── train_improved_model.py          # Enhanced model training
+│   └── run_joint_training.py            # Joint training approach
 │
-├── 📊 analyze_recommendations.py         # Recommendation quality analysis
 └── 📋 requirements.txt                   # Python dependencies
 ```
 
@@ -478,24 +487,11 @@ python api_2phase.py
 python api_joint.py
 ```
 
-### 📊 Analysis & Testing Tools
-
+### 🔧 System Testing
 ```bash
-# Comprehensive recommendation analysis
-python analyze_recommendations.py
-# → Generates recommendation_analysis_report.md + plots
-
-# Test individual engines
-python -m src.inference.enhanced_recommendation_engine_128d  # 128D enhanced
-python -m src.inference.enhanced_recommendation_engine      # Standard enhanced
-python -m src.inference.recommendation_engine              # Basic engine
-
-# Real user data utilities
+# Test core system components
 python -m src.utils.real_user_selector  # Demo real user extraction
-
-# Data processing utilities
-python -m src.preprocessing.data_loader
-python -m src.preprocessing.optimized_dataset_creator
+python -m src.preprocessing.data_loader  # Verify data loading
 ```
 
 ### 🧪 Frontend Development
@@ -667,7 +663,8 @@ RecSys-HP/
 ✅ **Enhanced Architecture**: 128D embeddings, temperature scaling, contrastive learning  
 ✅ **Curriculum Learning**: Progressive training for better convergence  
 ✅ **Category-Aware Recommendations**: Intelligent personalization with diversity  
-✅ **Comprehensive Analysis**: Quality metrics and performance evaluation  
+✅ **Aggregated Content-Based Filtering**: Revolutionary user history aggregation approach  
+✅ **Enhanced Demographic Support**: Improved cold-start user handling  
 ✅ **Production Ready**: Scalable API with enhanced frontend features  
 
 **🎉 Ready to deliver next-generation personalized recommendations!**
@@ -687,11 +684,12 @@ This project provides multiple training strategies:
 - **2-Phase API** (`api_2phase.py`) - Specialized for 2-phase training
 - **Joint API** (`api_joint.py`) - Optimized for joint training approach
 
-## 📊 Analysis Tools
+## 🔧 Development Tools
 
-- **Recommendation Analysis** (`analyze_recommendations.py`) - Quality metrics and evaluation
+- **Real User Selection** (`src.utils.real_user_selector`) - Extract real user profiles for testing
+- **Data Loading Utilities** (`src.preprocessing.data_loader`) - Dataset loading and validation
 
-## 🔧 Development & Testing
+## 🧪 Development & Testing
 
 ### Frontend Development
 ```bash
