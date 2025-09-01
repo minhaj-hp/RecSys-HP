@@ -73,6 +73,18 @@ function App() {
   const [showSimilarItems, setShowSimilarItems] = useState(false);
   const [loadingSimilarItems, setLoadingSimilarItems] = useState(false);
 
+  // Custom user tab states
+  const [activeCustomTab, setActiveCustomTab] = useState('real');
+  const [activeDemographicsTab, setActiveDemographicsTab] = useState('random');
+
+  // Demographics management function
+  const handleProfileChange = (field, value) => {
+    setUserProfile(prev => ({
+      ...prev,
+      [field]: field === 'age' || field === 'income' ? parseInt(value) || 0 : value
+    }));
+  };
+
   // Load sample items and real users on component mount
   useEffect(() => {
     fetchSampleItems();
@@ -293,12 +305,6 @@ function App() {
     }));
   };
 
-  const handleProfileChange = (field, value) => {
-    setUserProfile(prev => ({
-      ...prev,
-      [field]: field === 'age' || field === 'income' ? parseInt(value) || 0 : value
-    }));
-  };
 
   const handleRealUserSelect = (user) => {
     setSelectedRealUser(user);
@@ -843,255 +849,12 @@ function App() {
           </div>
         )}
 
-        {/* User Profile Form */}
-        <div className="user-profile-form">
-          <h2>User Demographics {useRealUsers && selectedRealUser ? '(From Real User)' : '(Custom)'}</h2>
-          
-          {!useRealUsers && (
-            <button 
-              onClick={() => {
-                setUseRealUsers(true);
-                if (realUsers.length > 0) handleRealUserSelect(realUsers[0]);
-              }}
-              className="btn btn-secondary"
-              style={{marginBottom: '15px'}}
-            >
-              Switch to Real Users
-            </button>
-          )}
-          
-          <div className="form-row">
-            <div className="form-group">
-              <label htmlFor="age">Age:</label>
-              <input
-                type="number"
-                id="age"
-                value={userProfile.age}
-                onChange={(e) => handleProfileChange('age', e.target.value)}
-                min="18"
-                max="100"
-                disabled={useRealUsers && selectedRealUser}
-                style={{backgroundColor: useRealUsers && selectedRealUser ? '#f5f5f5' : 'white'}}
-              />
-            </div>
-            
-            <div className="form-group">
-              <label htmlFor="gender">Gender:</label>
-              <select
-                id="gender"
-                value={userProfile.gender}
-                onChange={(e) => handleProfileChange('gender', e.target.value)}
-                disabled={useRealUsers && selectedRealUser}
-                style={{backgroundColor: useRealUsers && selectedRealUser ? '#f5f5f5' : 'white'}}
-              >
-                <option value="male">Male</option>
-                <option value="female">Female</option>
-              </select>
-            </div>
-            
-            <div className="form-group">
-              <label htmlFor="income">Annual Income ($):</label>
-              <input
-                type="number"
-                id="income"
-                value={userProfile.income}
-                onChange={(e) => handleProfileChange('income', e.target.value)}
-                min="0"
-                step="1000"
-                disabled={useRealUsers && selectedRealUser}
-                style={{backgroundColor: useRealUsers && selectedRealUser ? '#f5f5f5' : 'white'}}
-              />
-            </div>
-          </div>
-          
-          {/* New Demographic Features */}
-          <div className="form-row demographic-features">
-            <div className="form-group">
-              <label htmlFor="profession">Profession:</label>
-              <select
-                id="profession"
-                value={userProfile.profession}
-                onChange={(e) => handleProfileChange('profession', e.target.value)}
-                disabled={useRealUsers && selectedRealUser}
-                style={{backgroundColor: useRealUsers && selectedRealUser ? '#f5f5f5' : 'white'}}
-              >
-                <option value="Technology">Technology</option>
-                <option value="Healthcare">Healthcare</option>
-                <option value="Education">Education</option>
-                <option value="Finance">Finance</option>
-                <option value="Retail">Retail</option>
-                <option value="Manufacturing">Manufacturing</option>
-                <option value="Services">Services</option>
-                <option value="Other">Other</option>
-              </select>
-            </div>
-            
-            <div className="form-group">
-              <label htmlFor="location">Location:</label>
-              <select
-                id="location"
-                value={userProfile.location}
-                onChange={(e) => handleProfileChange('location', e.target.value)}
-                disabled={useRealUsers && selectedRealUser}
-                style={{backgroundColor: useRealUsers && selectedRealUser ? '#f5f5f5' : 'white'}}
-              >
-                <option value="Urban">Urban</option>
-                <option value="Suburban">Suburban</option>
-                <option value="Rural">Rural</option>
-              </select>
-            </div>
-            
-            <div className="form-group">
-              <label htmlFor="education_level">Education Level:</label>
-              <select
-                id="education_level"
-                value={userProfile.education_level}
-                onChange={(e) => handleProfileChange('education_level', e.target.value)}
-                disabled={useRealUsers && selectedRealUser}
-                style={{backgroundColor: useRealUsers && selectedRealUser ? '#f5f5f5' : 'white'}}
-              >
-                <option value="High School">High School</option>
-                <option value="Some College">Some College</option>
-                <option value="Bachelor's">Bachelor's</option>
-                <option value="Master's">Master's</option>
-                <option value="PhD+">PhD+</option>
-              </select>
-            </div>
-            
-            <div className="form-group">
-              <label htmlFor="marital_status">Marital Status:</label>
-              <select
-                id="marital_status"
-                value={userProfile.marital_status}
-                onChange={(e) => handleProfileChange('marital_status', e.target.value)}
-                disabled={useRealUsers && selectedRealUser}
-                style={{backgroundColor: useRealUsers && selectedRealUser ? '#f5f5f5' : 'white'}}
-              >
-                <option value="Single">Single</option>
-                <option value="Married">Married</option>
-                <option value="Divorced">Divorced</option>
-                <option value="Widowed">Widowed</option>
-              </select>
-            </div>
-          </div>
-        </div>
 
-        {/* Random Behavioral Patterns for Custom Users */}
-        {!useRealUsers && (
-          <div className="random-behavioral-patterns">
-            <h2>Real User Behavioral Patterns</h2>
-            <p>Apply real user interaction patterns to your custom demographics</p>
-            
-            <div className="behavioral-pattern-controls">
-              <div className="pattern-refresh-section">
-                <button 
-                  onClick={fetchRandomBehavioralPatterns}
-                  className="btn btn-secondary"
-                  disabled={!randomBehavioralPatterns.length && false} // Always enabled
-                >
-                  🔄 Refresh Random Patterns ({randomBehavioralPatterns.length})
-                </button>
-                
-                {selectedBehavioralPattern && (
-                  <button 
-                    onClick={clearBehavioralPattern}
-                    className="btn btn-outline"
-                    style={{marginLeft: '10px'}}
-                  >
-                    Clear Pattern
-                  </button>
-                )}
-              </div>
-
-              {selectedBehavioralPattern && (
-                <div className="selected-behavioral-pattern">
-                  <h3>Applied Behavioral Pattern</h3>
-                  <div className="pattern-info">
-                    <div className="pattern-summary">
-                      <strong>Pattern:</strong> {selectedBehavioralPattern.pattern}
-                    </div>
-                    <div className="pattern-stats">
-                      <span><strong>Views:</strong> {selectedBehavioralPattern.stats.views}</span>
-                      <span><strong>Cart Adds:</strong> {selectedBehavioralPattern.stats.cart_adds}</span>
-                      <span><strong>Purchases:</strong> {selectedBehavioralPattern.stats.purchases}</span>
-                    </div>
-                    <div className="pattern-items">
-                      <strong>Interaction History:</strong> {selectedBehavioralPattern.interactionHistory.length} items 
-                      (using {Math.min(50, selectedBehavioralPattern.interactionHistory.length)} for recommendations)
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {randomBehavioralPatterns.length > 0 && !selectedBehavioralPattern && (
-                <div className="behavioral-pattern-grid">
-                  <h3>Available Patterns ({randomBehavioralPatterns.length})</h3>
-                  <div className="pattern-grid">
-                    {randomBehavioralPatterns.slice(0, 12).map((pattern) => (
-                      <div key={pattern.id} className="pattern-card" onClick={() => applyBehavioralPattern(pattern)}>
-                        <div className="pattern-card-header">
-                          <div className="pattern-type">{pattern.pattern}</div>
-                        </div>
-                        <div className="pattern-card-stats">
-                          <div className="pattern-stat">
-                            <span className="stat-number">{pattern.stats.views}</span>
-                            <span className="stat-label">Views</span>
-                          </div>
-                          <div className="pattern-stat">
-                            <span className="stat-number">{pattern.stats.cart_adds}</span>
-                            <span className="stat-label">Carts</span>
-                          </div>
-                          <div className="pattern-stat">
-                            <span className="stat-number">{pattern.stats.purchases}</span>
-                            <span className="stat-label">Purchases</span>
-                          </div>
-                        </div>
-                        <div className="pattern-card-summary">
-                          {pattern.stats.total_interactions} total interactions
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                  
-                  {randomBehavioralPatterns.length > 12 && (
-                    <div className="pattern-grid-more">
-                      <p>Showing 12 of {randomBehavioralPatterns.length} patterns. Click refresh for different patterns.</p>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
 
         {/* Interaction Patterns */}
         <div className="interaction-patterns">
           {useRealUsers && selectedRealUser ? (
             <>
-              <h2>Real User Interaction History</h2>
-              <p>This user has genuine interaction history from the dataset - no synthetic patterns needed.</p>
-              
-              <div className="real-interaction-summary">
-                <div className="summary-card views">
-                  <div className="summary-number">{selectedRealUser.interaction_stats.views}</div>
-                  <div className="summary-label">Views</div>
-                </div>
-                <div className="summary-card carts">
-                  <div className="summary-number">{selectedRealUser.interaction_stats.cart_adds}</div>
-                  <div className="summary-label">Cart Adds</div>
-                </div>
-                <div className="summary-card purchases">
-                  <div className="summary-number">{selectedRealUser.interaction_stats.purchases}</div>
-                  <div className="summary-label">Purchases</div>
-                </div>
-              </div>
-
-              <div className="real-history-info">
-                <p><strong>Pattern:</strong> {selectedRealUser.interaction_pattern}</p>
-                <p><strong>Total Interactions:</strong> {selectedRealUser.interaction_stats.total_interactions}</p>
-                <p><strong>Unique Items:</strong> {selectedRealUser.interaction_stats.unique_items}</p>
-                <p><strong>Items in History:</strong> {userProfile.interaction_history.length} (showing up to 50 most recent)</p>
-              </div>
 
               {/* Category Analysis Columns */}
               {(Object.keys(categoryPercentages).length > 0 || Object.keys(recommendationCategoryPercentages).length > 0) && (
@@ -1177,6 +940,367 @@ function App() {
             <>
               <h2>Custom User Interaction History</h2>
               <p>Using synthetic patterns or behavioral patterns to simulate user behavior</p>
+              
+              <button 
+                onClick={() => {
+                  setUseRealUsers(true);
+                  if (realUsers.length > 0) handleRealUserSelect(realUsers[0]);
+                }}
+                className="btn btn-secondary"
+                style={{marginBottom: '20px'}}
+              >
+                Switch to Real Users
+              </button>
+
+              {/* User Demographics Card */}
+              <div className="demographics-card">
+                <h3>User Demographics</h3>
+                
+                {/* Demographics Tabs */}
+                <div className="demographics-tabs">
+                  <button
+                    className={`tab-button ${activeDemographicsTab === 'random' ? 'active' : ''}`}
+                    onClick={() => setActiveDemographicsTab('random')}
+                  >
+                    Random Users
+                  </button>
+                  <button
+                    className={`tab-button ${activeDemographicsTab === 'custom' ? 'active' : ''}`}
+                    onClick={() => setActiveDemographicsTab('custom')}
+                  >
+                    Custom Demographics
+                  </button>
+                </div>
+
+                {/* Demographics Tab Content */}
+                <div className="demographics-tab-content">
+                  {activeDemographicsTab === 'random' && (
+                    <div className="random-users-section">
+                      <p>Select demographics from random users in the dataset</p>
+                      
+                      <div className="random-user-selector">
+                        <label htmlFor="randomDemographicsSelect">Choose random user demographics:</label>
+                        <select 
+                          id="randomDemographicsSelect"
+                          value={selectedRealUser?.user_id || ''}
+                          onChange={(e) => {
+                            const userId = parseInt(e.target.value);
+                            const user = realUsers.find(u => u.user_id === userId);
+                            if (user) {
+                              // Apply only demographics, not interaction history
+                              setUserProfile(prev => ({
+                                ...prev,
+                                age: user.age,
+                                gender: user.gender,
+                                income: user.income,
+                                profession: user.profession || 'Other',
+                                location: user.location || 'Urban',
+                                education_level: user.education_level || 'High School',
+                                marital_status: user.marital_status || 'Single'
+                              }));
+                              setSelectedRealUser(user);
+                            }
+                          }}
+                        >
+                          <option value="">Select a user for demographics...</option>
+                          {realUsers.map((user, index) => (
+                            <option key={user.user_id} value={user.user_id}>
+                              #{index + 1}: {user.age}yr {user.gender}, ${user.income.toLocaleString()}, {user.profession || 'Other'}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {selectedRealUser && (
+                        <div className="selected-demographics-summary">
+                          <h4>Selected Demographics</h4>
+                          <div className="demographics-grid">
+                            <div><strong>Age:</strong> {userProfile.age} years</div>
+                            <div><strong>Gender:</strong> {userProfile.gender}</div>
+                            <div><strong>Income:</strong> ${userProfile.income.toLocaleString()}</div>
+                            <div><strong>Profession:</strong> {userProfile.profession}</div>
+                            <div><strong>Location:</strong> {userProfile.location}</div>
+                            <div><strong>Education:</strong> {userProfile.education_level}</div>
+                            <div><strong>Marital Status:</strong> {userProfile.marital_status}</div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {activeDemographicsTab === 'custom' && (
+                    <div className="custom-demographics-section">
+                      <p>Customize user demographics manually</p>
+                      
+                      <div className="demographics-form">
+                        <div className="form-row">
+                          <div className="form-group">
+                            <label htmlFor="age">Age:</label>
+                            <input
+                              type="number"
+                              id="age"
+                              value={userProfile.age}
+                              onChange={(e) => handleProfileChange('age', e.target.value)}
+                              min="18"
+                              max="100"
+                            />
+                          </div>
+                          
+                          <div className="form-group">
+                            <label htmlFor="gender">Gender:</label>
+                            <select
+                              id="gender"
+                              value={userProfile.gender}
+                              onChange={(e) => handleProfileChange('gender', e.target.value)}
+                            >
+                              <option value="male">Male</option>
+                              <option value="female">Female</option>
+                            </select>
+                          </div>
+                          
+                          <div className="form-group">
+                            <label htmlFor="income">Annual Income ($):</label>
+                            <input
+                              type="number"
+                              id="income"
+                              value={userProfile.income}
+                              onChange={(e) => handleProfileChange('income', e.target.value)}
+                              min="0"
+                              step="1000"
+                            />
+                          </div>
+                        </div>
+                        
+                        <div className="form-row">
+                          <div className="form-group">
+                            <label htmlFor="profession">Profession:</label>
+                            <select
+                              id="profession"
+                              value={userProfile.profession}
+                              onChange={(e) => handleProfileChange('profession', e.target.value)}
+                            >
+                              <option value="Technology">Technology</option>
+                              <option value="Healthcare">Healthcare</option>
+                              <option value="Education">Education</option>
+                              <option value="Finance">Finance</option>
+                              <option value="Retail">Retail</option>
+                              <option value="Manufacturing">Manufacturing</option>
+                              <option value="Services">Services</option>
+                              <option value="Other">Other</option>
+                            </select>
+                          </div>
+                          
+                          <div className="form-group">
+                            <label htmlFor="location">Location:</label>
+                            <select
+                              id="location"
+                              value={userProfile.location}
+                              onChange={(e) => handleProfileChange('location', e.target.value)}
+                            >
+                              <option value="Urban">Urban</option>
+                              <option value="Suburban">Suburban</option>
+                              <option value="Rural">Rural</option>
+                            </select>
+                          </div>
+                          
+                          <div className="form-group">
+                            <label htmlFor="education_level">Education Level:</label>
+                            <select
+                              id="education_level"
+                              value={userProfile.education_level}
+                              onChange={(e) => handleProfileChange('education_level', e.target.value)}
+                            >
+                              <option value="High School">High School</option>
+                              <option value="Some College">Some College</option>
+                              <option value="Bachelor's">Bachelor's</option>
+                              <option value="Master's">Master's</option>
+                              <option value="PhD+">PhD+</option>
+                            </select>
+                          </div>
+                          
+                          <div className="form-group">
+                            <label htmlFor="marital_status">Marital Status:</label>
+                            <select
+                              id="marital_status"
+                              value={userProfile.marital_status}
+                              onChange={(e) => handleProfileChange('marital_status', e.target.value)}
+                            >
+                              <option value="Single">Single</option>
+                              <option value="Married">Married</option>
+                              <option value="Divorced">Divorced</option>
+                              <option value="Widowed">Widowed</option>
+                            </select>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Interaction Patterns Card */}
+              <div className="interaction-patterns-card">
+                <h3>Interaction Patterns</h3>
+                
+                {/* Interaction Pattern Tabs */}
+                <div className="interaction-tabs">
+                  <button
+                    className={`tab-button ${activeCustomTab === 'real' ? 'active' : ''}`}
+                    onClick={() => setActiveCustomTab('real')}
+                  >
+                    Real Behavioral Patterns
+                  </button>
+                  <button
+                    className={`tab-button ${activeCustomTab === 'synthetic' ? 'active' : ''}`}
+                    onClick={() => setActiveCustomTab('synthetic')}
+                  >
+                    Synthetic Patterns
+                  </button>
+                </div>
+
+                {/* Interaction Pattern Tab Content */}
+                <div className="interaction-tab-content">
+                  {activeCustomTab === 'real' && (
+                    <div className="random-behavioral-patterns">
+                    <h3>Real User Behavioral Patterns</h3>
+                    <p>Apply real user interaction patterns to your custom demographics</p>
+                    
+                    <div className="behavioral-pattern-controls">
+                      <div className="pattern-refresh-section">
+                        <button 
+                          onClick={fetchRandomBehavioralPatterns}
+                          className="btn btn-secondary"
+                          disabled={!randomBehavioralPatterns.length && false} // Always enabled
+                        >
+                          🔄 Refresh Random Patterns ({randomBehavioralPatterns.length})
+                        </button>
+                        
+                        {selectedBehavioralPattern && (
+                          <button 
+                            onClick={clearBehavioralPattern}
+                            className="btn btn-outline"
+                            style={{marginLeft: '10px'}}
+                          >
+                            Clear Pattern
+                          </button>
+                        )}
+                      </div>
+
+                      {selectedBehavioralPattern && (
+                        <div className="selected-behavioral-pattern">
+                          <h3>Applied Behavioral Pattern</h3>
+                          <div className="pattern-info">
+                            <div className="pattern-summary">
+                              <strong>Pattern:</strong> {selectedBehavioralPattern.pattern}
+                            </div>
+                            <div className="pattern-stats">
+                              <span><strong>Views:</strong> {selectedBehavioralPattern.stats.views}</span>
+                              <span><strong>Cart Adds:</strong> {selectedBehavioralPattern.stats.cart_adds}</span>
+                              <span><strong>Purchases:</strong> {selectedBehavioralPattern.stats.purchases}</span>
+                            </div>
+                            <div className="pattern-items">
+                              <strong>Interaction History:</strong> {selectedBehavioralPattern.interactionHistory.length} items 
+                              (using {Math.min(50, selectedBehavioralPattern.interactionHistory.length)} for recommendations)
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {randomBehavioralPatterns.length > 0 && !selectedBehavioralPattern && (
+                        <div className="behavioral-pattern-grid">
+                          <h3>Available Patterns ({randomBehavioralPatterns.length})</h3>
+                          <div className="pattern-grid">
+                            {randomBehavioralPatterns.slice(0, 12).map((pattern) => (
+                              <div key={pattern.id} className="pattern-card" onClick={() => applyBehavioralPattern(pattern)}>
+                                <div className="pattern-card-header">
+                                  <div className="pattern-type">{pattern.pattern}</div>
+                                </div>
+                                <div className="pattern-card-stats">
+                                  <div className="pattern-stat">
+                                    <span className="stat-number">{pattern.stats.views}</span>
+                                    <span className="stat-label">Views</span>
+                                  </div>
+                                  <div className="pattern-stat">
+                                    <span className="stat-number">{pattern.stats.cart_adds}</span>
+                                    <span className="stat-label">Carts</span>
+                                  </div>
+                                  <div className="pattern-stat">
+                                    <span className="stat-number">{pattern.stats.purchases}</span>
+                                    <span className="stat-label">Purchases</span>
+                                  </div>
+                                </div>
+                                <div className="pattern-card-summary">
+                                  {pattern.stats.total_interactions} total interactions
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                          
+                          {randomBehavioralPatterns.length > 12 && (
+                            <div className="pattern-grid-more">
+                              <p>Showing 12 of {randomBehavioralPatterns.length} patterns. Click refresh for different patterns.</p>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {activeCustomTab === 'synthetic' && (
+                  <div className="synthetic-patterns-section">
+                    <h3>Synthetic Interaction Patterns</h3>
+                    <p>Generate realistic user behavior patterns with proportional view, cart, and purchase events. Choose "New User" to test cold-start scenarios.</p>
+                    
+                    <div className="pattern-buttons">
+                      {INTERACTION_PATTERNS.map((pattern, index) => (
+                        <button
+                          key={index}
+                          className={`pattern-btn ${selectedPattern?.name === pattern.name ? 'active' : ''} ${pattern.isNewUser ? 'new-user-pattern' : ''}`}
+                          onClick={() => handlePatternSelect(pattern)}
+                        >
+                          {pattern.name}
+                          <br />
+                          <small>
+                            {pattern.isNewUser ? (
+                              <span style={{fontStyle: 'italic', color: '#6c757d'}}>Cold Start User</span>
+                            ) : (
+                              `${pattern.views}V • ${pattern.carts}C • ${pattern.purchases}P`
+                            )}
+                          </small>
+                        </button>
+                      ))}
+                      <button
+                        className="pattern-btn"
+                        onClick={clearInteractions}
+                        style={{backgroundColor: '#dc3545', color: 'white', borderColor: '#dc3545'}}
+                      >
+                        Clear All
+                      </button>
+                    </div>
+                    
+                    {/* Show informational message for New User pattern */}
+                    {selectedPattern?.isNewUser && (
+                      <div style={{
+                        backgroundColor: '#e3f2fd', 
+                        border: '1px solid #90caf9', 
+                        borderRadius: '8px', 
+                        padding: '15px', 
+                        margin: '15px 0',
+                        color: '#1565c0'
+                      }}>
+                        <h4 style={{margin: '0 0 10px 0', color: '#0d47a1'}}>🆕 New User (Cold Start) Selected</h4>
+                        <p style={{margin: '0', fontSize: '14px', lineHeight: '1.4'}}>
+                          Testing cold-start scenario with no interaction history. 
+                          <br /><strong>Compatible algorithms:</strong> Collaborative ✅, Hybrid ✅ (demographics-based)
+                          <br /><strong>Incompatible:</strong> Content-based ❌, Category-boosted ❌ (require history)
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+                </div>
+              </div>
               
               {/* Custom User Interaction Summary - Similar to Real User Summary */}
               {(selectedBehavioralPattern || interactions.length > 0) && (
@@ -1465,55 +1589,6 @@ function App() {
                       </div>
                     </div>
                   )}
-                </div>
-              )}
-              
-              <h3>Synthetic Interaction Patterns</h3>
-              <p>Generate realistic user behavior patterns with proportional view, cart, and purchase events. Choose "New User" to test cold-start scenarios.</p>
-              
-              <div className="pattern-buttons">
-                {INTERACTION_PATTERNS.map((pattern, index) => (
-                  <button
-                    key={index}
-                    className={`pattern-btn ${selectedPattern?.name === pattern.name ? 'active' : ''} ${pattern.isNewUser ? 'new-user-pattern' : ''}`}
-                    onClick={() => handlePatternSelect(pattern)}
-                  >
-                    {pattern.name}
-                    <br />
-                    <small>
-                      {pattern.isNewUser ? (
-                        <span style={{fontStyle: 'italic', color: '#6c757d'}}>Cold Start User</span>
-                      ) : (
-                        `${pattern.views}V • ${pattern.carts}C • ${pattern.purchases}P`
-                      )}
-                    </small>
-                  </button>
-                ))}
-                <button
-                  className="pattern-btn"
-                  onClick={clearInteractions}
-                  style={{backgroundColor: '#dc3545', color: 'white', borderColor: '#dc3545'}}
-                >
-                  Clear All
-                </button>
-              </div>
-              
-              {/* Show informational message for New User pattern */}
-              {selectedPattern?.isNewUser && (
-                <div style={{
-                  backgroundColor: '#e3f2fd', 
-                  border: '1px solid #90caf9', 
-                  borderRadius: '8px', 
-                  padding: '15px', 
-                  margin: '15px 0',
-                  color: '#1565c0'
-                }}>
-                  <h4 style={{margin: '0 0 10px 0', color: '#0d47a1'}}>🆕 New User (Cold Start) Selected</h4>
-                  <p style={{margin: '0', fontSize: '14px', lineHeight: '1.4'}}>
-                    Testing cold-start scenario with no interaction history. 
-                    <br /><strong>Compatible algorithms:</strong> Collaborative ✅, Hybrid ✅ (demographics-based)
-                    <br /><strong>Incompatible:</strong> Content-based ❌, Category-boosted ❌ (require history)
-                  </p>
                 </div>
               )}
             </>

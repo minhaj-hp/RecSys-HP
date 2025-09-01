@@ -421,6 +421,322 @@
   }
 }
 
+/* Custom User Tab Styles */
+.custom-user-tabs {
+  display: flex;
+  border-bottom: 2px solid #dee2e6;
+  margin-bottom: 20px;
+  background: #f8f9fa;
+  border-radius: 8px 8px 0 0;
+  padding: 0 10px;
+}
+
+.tab-button {
+  padding: 12px 24px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+  color: #6c757d;
+  border-radius: 6px 6px 0 0;
+  transition: all 0.3s ease;
+  margin: 8px 4px 0 4px;
+  position: relative;
+}
+
+.tab-button:hover {
+  background: rgba(0, 123, 255, 0.1);
+  color: #007bff;
+}
+
+.tab-button.active {
+  background: white;
+  color: #007bff;
+  border-bottom: 3px solid #007bff;
+  box-shadow: 0 -2px 8px rgba(0, 123, 255, 0.15);
+  margin-bottom: -2px;
+}
+
+.tab-content {
+  margin-top: 0;
+  padding: 20px;
+  background: white;
+  border-radius: 0 0 8px 8px;
+  border: 1px solid #dee2e6;
+  border-top: none;
+  min-height: 200px;
+}
+
+/* Synthetic patterns section within tab */
+.synthetic-patterns-section {
+  background: none;
+  padding: 0;
+  border: none;
+  margin: 0;
+}
+
+.synthetic-patterns-section h3 {
+  color: #495057;
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #dee2e6;
+}
+
+/* Mobile responsiveness for tabs */
+@media (max-width: 768px) {
+  .custom-user-tabs {
+    padding: 0 5px;
+  }
+  
+  .tab-button {
+    padding: 10px 16px;
+    font-size: 13px;
+    margin: 6px 2px 0 2px;
+  }
+  
+  .tab-content {
+    padding: 15px;
+  }
+}
+
+/* Separate Cards Design */
+.demographics-card, .interaction-patterns-card {
+  background: white;
+  border-radius: 10px;
+  margin-bottom: 25px;
+  border: 1px solid #e9ecef;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  overflow: hidden;
+}
+
+.demographics-card h3, .interaction-patterns-card h3 {
+  margin: 0;
+  padding: 20px 25px 15px 25px;
+  background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+  color: white;
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.interaction-patterns-card h3 {
+  background: linear-gradient(135deg, #007bff 0%, #6f42c1 100%);
+}
+
+/* Demographics and Interaction Tabs */
+.demographics-tabs, .interaction-tabs {
+  display: flex;
+  background: #f8f9fa;
+  border-bottom: 2px solid #dee2e6;
+  padding: 0 15px;
+}
+
+.demographics-tabs .tab-button, .interaction-tabs .tab-button {
+  padding: 12px 20px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+  color: #6c757d;
+  border-radius: 6px 6px 0 0;
+  transition: all 0.3s ease;
+  margin: 8px 4px 0 4px;
+  position: relative;
+}
+
+.demographics-tabs .tab-button:hover, .interaction-tabs .tab-button:hover {
+  background: rgba(40, 167, 69, 0.1);
+  color: #28a745;
+}
+
+.interaction-tabs .tab-button:hover {
+  background: rgba(0, 123, 255, 0.1);
+  color: #007bff;
+}
+
+.demographics-tabs .tab-button.active {
+  background: white;
+  color: #28a745;
+  border-bottom: 3px solid #28a745;
+  box-shadow: 0 -2px 8px rgba(40, 167, 69, 0.15);
+  margin-bottom: -2px;
+}
+
+.interaction-tabs .tab-button.active {
+  background: white;
+  color: #007bff;
+  border-bottom: 3px solid #007bff;
+  box-shadow: 0 -2px 8px rgba(0, 123, 255, 0.15);
+  margin-bottom: -2px;
+}
+
+/* Tab Content Areas */
+.demographics-tab-content, .interaction-tab-content {
+  padding: 25px;
+  background: white;
+  min-height: 200px;
+}
+
+/* Random Users Section */
+.random-users-section {
+  background: none;
+}
+
+.random-user-selector {
+  margin: 20px 0;
+}
+
+.random-user-selector label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #495057;
+}
+
+.random-user-selector select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 2px solid #ced4da;
+  border-radius: 6px;
+  font-size: 14px;
+  background: white;
+  color: #495057;
+  transition: border-color 0.2s ease;
+}
+
+.random-user-selector select:focus {
+  outline: none;
+  border-color: #28a745;
+  box-shadow: 0 0 0 2px rgba(40, 167, 69, 0.25);
+}
+
+/* Selected Demographics Summary */
+.selected-demographics-summary {
+  margin-top: 25px;
+  padding: 20px;
+  background: #e8f5e8;
+  border-radius: 8px;
+  border: 1px solid #c3e6c3;
+}
+
+.selected-demographics-summary h4 {
+  margin: 0 0 15px 0;
+  color: #2d5a2d;
+  font-size: 1.1rem;
+}
+
+.demographics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.demographics-grid div {
+  padding: 8px 12px;
+  background: white;
+  border-radius: 6px;
+  border: 1px solid #28a745;
+  font-size: 14px;
+}
+
+/* Custom Demographics Section */
+.custom-demographics-section {
+  background: none;
+}
+
+.demographics-form {
+  margin-top: 20px;
+}
+
+.demographics-form .form-row {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.demographics-form .form-group {
+  flex: 1;
+  min-width: 200px;
+}
+
+.demographics-form .form-group label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: 600;
+  color: #495057;
+}
+
+.demographics-form .form-group input,
+.demographics-form .form-group select {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ced4da;
+  border-radius: 5px;
+  font-size: 14px;
+}
+
+.demographics-form .form-group input:focus,
+.demographics-form .form-group select:focus {
+  outline: none;
+  border-color: #28a745;
+  box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
+}
+
+/* Interaction Patterns within Card */
+.interaction-patterns-card .random-behavioral-patterns {
+  background: none;
+  padding: 0;
+  margin: 0;
+  border: none;
+}
+
+.interaction-patterns-card .random-behavioral-patterns h3 {
+  color: #495057;
+  background: none;
+  padding: 0 0 15px 0;
+  margin-bottom: 15px;
+  border-bottom: 1px solid #dee2e6;
+  font-size: 1.1rem;
+}
+
+/* Mobile responsiveness for cards */
+@media (max-width: 768px) {
+  .demographics-card, .interaction-patterns-card {
+    margin-bottom: 20px;
+  }
+  
+  .demographics-card h3, .interaction-patterns-card h3 {
+    padding: 15px 20px 12px 20px;
+    font-size: 1.1rem;
+  }
+  
+  .demographics-tabs, .interaction-tabs {
+    padding: 0 10px;
+  }
+  
+  .demographics-tabs .tab-button, .interaction-tabs .tab-button {
+    padding: 10px 15px;
+    font-size: 13px;
+    margin: 6px 2px 0 2px;
+  }
+  
+  .demographics-tab-content, .interaction-tab-content {
+    padding: 20px;
+  }
+  
+  .demographics-form .form-row {
+    flex-direction: column;
+    gap: 15px;
+  }
+  
+  .demographics-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+}
+
 .container {
   max-width: 1200px;
   margin: 0 auto;
