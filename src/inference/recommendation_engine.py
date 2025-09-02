@@ -350,65 +350,6 @@ class RecommendationEngine:
         
         return user_embedding.numpy()[0]
     
-    def get_user_embedding_enhanced(self, 
-                                  age: int,
-                                  gender: str, 
-                                  income: float,
-                                  profession: str = "Other",
-                                  location: str = "Urban", 
-                                  education_level: str = "High School",
-                                  marital_status: str = "Single",
-                                  interaction_history: List[int] = None) -> np.ndarray:
-        """Enhanced user embedding that handles zero interactions better."""
-        
-        # Get base embedding
-        base_embedding = self.get_user_embedding(
-            age, gender, income, profession, location, education_level, marital_status, interaction_history
-        )
-        
-        # Check if this is a zero-interaction user
-        has_interactions = interaction_history and len(interaction_history) > 0
-        
-        if not has_interactions:
-            # For zero interactions, amplify the demographic component
-            # This is a heuristic fix until we retrain the model
-            
-            # Create demographic-enhanced embedding
-            demographic_mask = np.ones_like(base_embedding)
-            
-            # Amplify first 50% of dimensions (likely demographic-influenced)
-            mid_point = len(base_embedding) // 2
-            demographic_mask[:mid_point] *= 3.0  # Strong amplification
-            
-            # Reduce influence of latter dimensions (likely history-influenced) 
-            demographic_mask[mid_point:] *= 0.2  # Strong reduction
-            
-            enhanced_embedding = base_embedding * demographic_mask
-            
-            # Add demographic-specific variation to differentiate profiles
-            demographic_hash = (
-                age * 1000 + 
-                (1 if gender.lower() == 'male' else 0) * 100 +
-                int(income / 10000) * 10 +
-                self.categorize_profession(profession) * 7 +
-                self.categorize_location(location) * 3 +
-                self.categorize_education_level(education_level) * 5 +
-                self.categorize_marital_status(marital_status) * 2
-            )
-            
-            np.random.seed(demographic_hash % 2**32)  # Reproducible noise
-            demographic_noise = np.random.normal(0, 0.02, base_embedding.shape)  # Increased noise
-            enhanced_embedding += demographic_noise
-            
-            # Renormalize
-            enhanced_embedding = enhanced_embedding / np.linalg.norm(enhanced_embedding)
-            
-            print(f"Enhanced embedding for zero interactions: age={age}, gender={gender}, profession={profession}")
-            
-            return enhanced_embedding.astype(np.float32)
-        
-        return base_embedding
-    
     def get_item_embedding(self, item_id: int) -> Optional[np.ndarray]:
         """Get item embedding from FAISS index or item tower."""
         
@@ -442,7 +383,7 @@ class RecommendationEngine:
         """
         
         # Get enhanced user embedding from User Tower
-        user_embedding = self.get_user_embedding_enhanced(age, gender, income, profession, location, education_level, marital_status, interaction_history)
+        user_embedding = self.get_user_embedding(age, gender, income, profession, location, education_level, marital_status, interaction_history)
         
         # Find items with highest similarity scores using FAISS over Item Tower embeddings
         similar_items = self.faiss_index.search_by_embedding(user_embedding, k * 4)
@@ -817,7 +758,7 @@ class RecommendationEngine:
             )
         
         # Step 2: Get enhanced user embedding and do wide search (increased for better subcategory coverage)
-        user_embedding = self.get_user_embedding_enhanced(age, gender, income, profession, location, education_level, marital_status, interaction_history)
+        user_embedding = self.get_user_embedding(age, gender, income, profession, location, education_level, marital_status, interaction_history)
         similar_items = self.faiss_index.search_by_embedding(user_embedding, k * 10)  # Increased from k*6 to k*10
         
         # Step 3: Organize candidates by subcategory with parent fallback
