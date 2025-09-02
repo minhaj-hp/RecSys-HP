@@ -433,7 +433,7 @@ class RecommendationEngine:
                                    interaction_history: List[int] = None,
                                    k: int = 10,
                                    exclude_history: bool = True,
-                                   category_boost: float = 1.3) -> List[Tuple[int, float, Dict]]:
+                                   category_boost: float = 1.6) -> List[Tuple[int, float, Dict]]:
         """Generate recommendations using raw two-tower retrieval with category awareness.
         
         This method computes user embeddings via the User Tower, then finds items with
