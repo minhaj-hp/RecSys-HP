@@ -1292,7 +1292,7 @@ function App() {
                         <h4 style={{margin: '0 0 10px 0', color: '#0d47a1'}}>🆕 New User (Cold Start) Selected</h4>
                         <p style={{margin: '0', fontSize: '14px', lineHeight: '1.4'}}>
                           Testing cold-start scenario with no interaction history. 
-                          <br /><strong>Compatible algorithms:</strong> Collaborative ✅, Hybrid ✅ (demographics-based)
+                          <br /><strong>Compatible algorithms:</strong> Raw Two-Tower Retrieval ✅, Hybrid ✅ (demographics-based)
                           <br /><strong>Incompatible:</strong> Content-based ❌, Category-boosted ❌ (require history)
                         </p>
                       </div>
@@ -1743,7 +1743,7 @@ function App() {
                 onChange={(e) => setRecommendationType(e.target.value)}
               >
                 <option value="hybrid">Hybrid (Recommended)</option>
-                <option value="collaborative">Collaborative Filtering</option>
+                <option value="collaborative">Raw Two-Tower Retrieval</option>
                 <option value="content">Content-Based</option>
                 <option value="category_boosted">📊 Category Boosted (50% from user categories)</option>
               </select>
@@ -1791,13 +1791,13 @@ function App() {
           
           {recommendationType === 'content' && userProfile.interaction_history.length === 0 && (
             <p style={{color: '#dc3545', marginTop: '10px', fontSize: '14px'}}>
-              ⚠️ Content-based recommendations require interaction history. Please select a pattern with interactions above, or choose 'Collaborative' or 'Hybrid' for new users.
+              ⚠️ Content-based recommendations require interaction history. Please select a pattern with interactions above, or choose 'Raw Two-Tower Retrieval' or 'Hybrid' for new users.
             </p>
           )}
           
           {recommendationType === 'category_boosted' && userProfile.interaction_history.length === 0 && (
             <p style={{color: '#dc3545', marginTop: '10px', fontSize: '14px'}}>
-              ⚠️ Category-boosted recommendations require interaction history to analyze preferences. Please select a pattern with interactions above, or choose 'Collaborative' for new users.
+              ⚠️ Category-boosted recommendations require interaction history to analyze preferences. Please select a pattern with interactions above, or choose 'Raw Two-Tower Retrieval' for new users.
             </p>
           )}
         </div>

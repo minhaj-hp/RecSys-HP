@@ -214,9 +214,11 @@ class RecommendationEngine:
         
         try:
             self.user_tower.load_weights(f"{self.artifacts_path}/user_tower_weights_best")
-            print("Loaded trained user tower")
-        except:
-            print("Warning: Could not load user tower weights")
+            print("✅ Loaded trained user tower weights (best model)")
+        except Exception as e:
+            print(f"❌ Warning: Could not load user tower weights: {e}")
+            print("   This is expected if you haven't retrained with the new architecture yet")
+            print("   Please run joint training to generate compatible weights")
     
     def _load_rating_model(self):
         """Load trained rating prediction model."""
@@ -420,7 +422,7 @@ class RecommendationEngine:
         
         return item_embedding.numpy()[0]
     
-    def recommend_items_collaborative(self,
+    def recommend_items_raw_two_tower(self,
                                    age: int,
                                    gender: str,
                                    income: float,
@@ -432,12 +434,16 @@ class RecommendationEngine:
                                    k: int = 10,
                                    exclude_history: bool = True,
                                    category_boost: float = 1.3) -> List[Tuple[int, float, Dict]]:
-        """Generate recommendations using collaborative filtering with category awareness."""
+        """Generate recommendations using raw two-tower retrieval with category awareness.
         
-        # Get enhanced user embedding (better for zero interactions)
+        This method computes user embeddings via the User Tower, then finds items with
+        highest similarity scores via FAISS search over Item Tower embeddings.
+        """
+        
+        # Get enhanced user embedding from User Tower
         user_embedding = self.get_user_embedding_enhanced(age, gender, income, profession, location, education_level, marital_status, interaction_history)
         
-        # Find similar items using FAISS (get more candidates for boosting)
+        # Find items with highest similarity scores using FAISS over Item Tower embeddings
         similar_items = self.faiss_index.search_by_embedding(user_embedding, k * 4)
         
         # Get user's preferred categories from interaction history
@@ -480,6 +486,22 @@ class RecommendationEngine:
             recommendations.append((item_id, score, item_info))
         
         return recommendations
+    
+    def recommend_items_collaborative(self, *args, **kwargs) -> List[Tuple[int, float, Dict]]:
+        """DEPRECATED: Use recommend_items_raw_two_tower() instead.
+        
+        This method name was misleading as it doesn't implement true collaborative filtering.
+        It performs raw two-tower retrieval (user-item embedding similarity).
+        """
+        import warnings
+        warnings.warn(
+            "recommend_items_collaborative() is deprecated and misleading. "
+            "Use recommend_items_raw_two_tower() instead. This method performs "
+            "raw two-tower retrieval, not collaborative filtering.",
+            DeprecationWarning,
+            stacklevel=2
+        )
+        return self.recommend_items_raw_two_tower(*args, **kwargs)
     
     def _aggregate_user_history_embedding(self, 
                                         interaction_history: List[int],

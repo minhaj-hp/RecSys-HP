@@ -1,0 +1,1478 @@
+{
+  "test_timestamp": "2025-09-02T07:51:56.963168",
+  "runtime_seconds": 0.4388306140899658,
+  "users_tested": 10,
+  "successful_recommendations": 10,
+  "user_recommendations": {
+    "Young_Tech_Male_1": [
+      "1002827",
+      "1002225",
+      "28721300",
+      "1307321",
+      "1307043",
+      "1306317",
+      "7005176",
+      "3700828",
+      "4803186",
+      "4000088"
+    ],
+    "Young_Tech_Male_2": [
+      "28721300",
+      "7005176",
+      "21401588",
+      "4803186",
+      "1306842",
+      "4000088",
+      "1002827",
+      "3700828",
+      "4000134",
+      "1307523"
+    ],
+    "Young_Tech_Female": [
+      "28721300",
+      "7005176",
+      "4000088",
+      "1306842",
+      "21401588",
+      "28720725",
+      "1307523",
+      "1307079",
+      "28722253",
+      "4000134"
+    ],
+    "Healthcare_Professional_1": [
+      "28721300",
+      "7005176",
+      "4000136",
+      "4000134",
+      "2900629",
+      "4000088",
+      "45500019",
+      "1306842",
+      "3100968",
+      "28720710"
+    ],
+    "Healthcare_Professional_2": [
+      "1003304",
+      "1003311",
+      "1002525",
+      "1004244",
+      "1001618",
+      "1003305",
+      "1005208",
+      "1002536",
+      "1307050",
+      "1306314"
+    ],
+    "Senior_Rural_Retiree": [
+      "28721300",
+      "7005176",
+      "28722200",
+      "28721289",
+      "3800306",
+      "4803486",
+      "3800239",
+      "28722253",
+      "3100968",
+      "28720725"
+    ],
+    "Young_Student": [
+      "1004615",
+      "1004613",
+      "1004701",
+      "1002827",
+      "1004288",
+      "1004400",
+      "1004284",
+      "1004703",
+      "1004174",
+      "1002494"
+    ],
+    "Zero_Tech_Professional": [
+      "28721300",
+      "4800369",
+      "2403019",
+      "17800127",
+      "28720725",
+      "3700828",
+      "28717990",
+      "100008810",
+      "28719130",
+      "4803486"
+    ],
+    "Zero_Healthcare_Professional": [
+      "28721300",
+      "28720710",
+      "28717990",
+      "4800369",
+      "2900629",
+      "2403019",
+      "3700828",
+      "28720592",
+      "4803186",
+      "28720725"
+    ],
+    "Zero_Different_Demographics": [
+      "28721300",
+      "4800369",
+      "28717990",
+      "4803611",
+      "4803486",
+      "28720710",
+      "2403019",
+      "3700828",
+      "2900629",
+      "28720725"
+    ]
+  },
+  "recommendation_details": {
+    "Young_Tech_Male_1": {
+      "recommendations": [
+        [
+          "1002827",
+          0.5637333989143372,
+          {
+            "product_id": 1002827,
+            "category_id": 2053013555631882655,
+            "category_code": "electronics.smartphone",
+            "brand": "leeco",
+            "price": 345.36
+          }
+        ],
+        [
+          "1002225",
+          0.4861778557300568,
+          {
+            "product_id": 1002225,
+            "category_id": 2053013555631882655,
+            "category_code": "electronics.smartphone",
+            "brand": "philips",
+            "price": 82.37
+          }
+        ],
+        [
+          "28721300",
+          0.45401957631111145,
+          {
+            "product_id": 28721300,
+            "category_id": 2053013565228450757,
+            "category_code": "apparel.shoes",
+            "brand": "rooman",
+            "price": 64.61
+          }
+        ],
+        [
+          "1307321",
+          0.4212842285633087,
+          {
+            "product_id": 1307321,
+            "category_id": 2053013558920217191,
+            "category_code": "computers.notebook",
+            "brand": "hp",
+            "price": 1273.91
+          }
+        ],
+        [
+          "1307043",
+          0.41621068120002747,
+          {
+            "product_id": 1307043,
+            "category_id": 2053013558920217191,
+            "category_code": "computers.notebook",
+            "brand": "hp",
+            "price": 1127.44
+          }
+        ],
+        [
+          "1306317",
+          0.4158136248588562,
+          {
+            "product_id": 1306317,
+            "category_id": 2053013558920217191,
+            "category_code": "computers.notebook",
+            "brand": "hp",
+            "price": 868.7
+          }
+        ],
+        [
+          "7005176",
+          0.4145911633968353,
+          {
+            "product_id": 7005176,
+            "category_id": 2053013560346280633,
+            "category_code": "kids.carriage",
+            "brand": "tutis",
+            "price": 469.77
+          }
+        ],
+        [
+          "3700828",
+          0.4133100211620331,
+          {
+            "product_id": 3700828,
+            "category_id": 2053013565983425517,
+            "category_code": "appliances.environment.vacuum",
+            "brand": "philips",
+            "price": 319.16
+          }
+        ],
+        [
+          "4803186",
+          0.4110420048236847,
+          {
+            "product_id": 4803186,
+            "category_id": 2053013554658804075,
+            "category_code": "electronics.audio.headphone",
+            "brand": "harper",
+            "price": 25.71
+          }
+        ],
+        [
+          "4000088",
+          0.4057946801185608,
+          {
+            "product_id": 4000088,
+            "category_id": 2053013566142809077,
+            "category_code": "construction.tools.generator",
+            "brand": "saturn",
+            "price": 61.96
+          }
+        ]
+      ],
+      "scores": [
+        0.5637333989143372,
+        0.4861778557300568,
+        0.45401957631111145,
+        0.4212842285633087,
+        0.41621068120002747,
+        0.4158136248588562,
+        0.4145911633968353,
+        0.4133100211620331,
+        0.4110420048236847,
+        0.4057946801185608
+      ],
+      "score_stats": {
+        "mean": 0.4401977235078812,
+        "std": 0.047440733355876445,
+        "min": 0.4057946801185608,
+        "max": 0.5637333989143372
+      }
+    },
+    "Young_Tech_Male_2": {
+      "recommendations": [
+        [
+          "28721300",
+          0.4579984247684479,
+          {
+            "product_id": 28721300,
+            "category_id": 2053013565228450757,
+            "category_code": "apparel.shoes",
+            "brand": "rooman",
+            "price": 64.61
+          }
+        ],
+        [
+          "7005176",
+          0.45096004009246826,
+          {
+            "product_id": 7005176,
+            "category_id": 2053013560346280633,
+            "category_code": "kids.carriage",
+            "brand": "tutis",
+            "price": 469.77
+          }
+        ],
+        [
+          "21401588",
+          0.416747510433197,
+          {
+            "product_id": 21401588,
+            "category_id": 2053013561579406073,
+            "category_code": "electronics.clocks",
+            "brand": "casio",
+            "price": 973.77
+          }
+        ],
+        [
+          "4803186",
+          0.4084094762802124,
+          {
+            "product_id": 4803186,
+            "category_id": 2053013554658804075,
+            "category_code": "electronics.audio.headphone",
+            "brand": "harper",
+            "price": 25.71
+          }
+        ],
+        [
+          "1306842",
+          0.4065713882446289,
+          {
+            "product_id": 1306842,
+            "category_id": 2053013558920217191,
+            "category_code": "computers.notebook",
+            "brand": "asus",
+            "price": 1232.39
+          }
+        ],
+        [
+          "4000088",
+          0.4056960642337799,
+          {
+            "product_id": 4000088,
+            "category_id": 2053013566142809077,
+            "category_code": "construction.tools.generator",
+            "brand": "saturn",
+            "price": 61.96
+          }
+        ],
+        [
+          "1002827",
+          0.4034326374530792,
+          {
+            "product_id": 1002827,
+            "category_id": 2053013555631882655,
+            "category_code": "electronics.smartphone",
+            "brand": "leeco",
+            "price": 345.36
+          }
+        ],
+        [
+          "3700828",
+          0.4031280279159546,
+          {
+            "product_id": 3700828,
+            "category_id": 2053013565983425517,
+            "category_code": "appliances.environment.vacuum",
+            "brand": "philips",
+            "price": 319.16
+          }
+        ],
+        [
+          "4000134",
+          0.39840516448020935,
+          {
+            "product_id": 4000134,
+            "category_id": 2053013566142809077,
+            "category_code": "construction.tools.generator",
+            "brand": "philips",
+            "price": 51.46
+          }
+        ],
+        [
+          "1307523",
+          0.39655154943466187,
+          {
+            "product_id": 1307523,
+            "category_id": 2053013558920217191,
+            "category_code": "computers.notebook",
+            "brand": "asus",
+            "price": 1287.01
+          }
+        ]
+      ],
+      "scores": [
+        0.4579984247684479,
+        0.45096004009246826,
+        0.416747510433197,
+        0.4084094762802124,
+        0.4065713882446289,
+        0.4056960642337799,
+        0.4034326374530792,
+        0.4031280279159546,
+        0.39840516448020935,
+        0.39655154943466187
+      ],
+      "score_stats": {
+        "mean": 0.41479002833366396,
+        "std": 0.020581844278732633,
+        "min": 0.39655154943466187,
+        "max": 0.4579984247684479
+      }
+    },
+    "Young_Tech_Female": {
+      "recommendations": [
+        [
+          "28721300",
+          0.46732962131500244,
+          {
+            "product_id": 28721300,
+            "category_id": 2053013565228450757,
+            "category_code": "apparel.shoes",
+            "brand": "rooman",
+            "price": 64.61
+          }
+        ],
+        [
+          "7005176",
+          0.4501546323299408,
+          {
+            "product_id": 7005176,
+            "category_id": 2053013560346280633,
+            "category_code": "kids.carriage",
+            "brand": "tutis",
+            "price": 469.77
+          }
+        ],
+        [
+          "4000088",
+          0.42441776394844055,
+          {
+            "product_id": 4000088,
+            "category_id": 2053013566142809077,
+            "category_code": "construction.tools.generator",
+            "brand": "saturn",
+            "price": 61.96
+          }
+        ],
+        [
+          "1306842",
+          0.420198917388916,
+          {
+            "product_id": 1306842,
+            "category_id": 2053013558920217191,
+            "category_code": "computers.notebook",
+            "brand": "asus",
+            "price": 1232.39
+          }
+        ],
+        [
+          "21401588",
+          0.41413217782974243,
+          {
+            "product_id": 21401588,
+            "category_id": 2053013561579406073,
+            "category_code": "electronics.clocks",
+            "brand": "casio",
+            "price": 973.77
+          }
+        ],
+        [
+          "28720725",
+          0.40988409519195557,
+          {
+            "product_id": 28720725,
+            "category_id": 2053013565228450757,
+            "category_code": "apparel.shoes",
+            "brand": "rooman",
+            "price": 62.81
+          }
+        ],
+        [
+          "1307523",
+          0.4079732298851013,
+          {
+            "product_id": 1307523,
+            "category_id": 2053013558920217191,
+            "category_code": "computers.notebook",
+            "brand": "asus",
+            "price": 1287.01
+          }
+        ],
+        [
+          "1307079",
+          0.4047234058380127,
+          {
+            "product_id": 1307079,
+            "category_id": 2053013558920217191,
+            "category_code": "computers.notebook",
+            "brand": "asus",
+            "price": 933.61
+          }
+        ],
+        [
+          "28722253",
+          0.3999931812286377,
+          {
+            "product_id": 28722253,
+            "category_id": 2053013565228450757,
+            "category_code": "apparel.shoes",
+            "brand": "respect",
+            "price": 80.83
+          }
+        ],
+        [
+          "4000134",
+          0.39635834097862244,
+          {
+            "product_id": 4000134,
+            "category_id": 2053013566142809077,
+            "category_code": "construction.tools.generator",
+            "brand": "philips",
+            "price": 51.46
+          }
+        ]
+      ],
+      "scores": [
+        0.46732962131500244,
+        0.4501546323299408,
+        0.42441776394844055,
+        0.420198917388916,
+        0.41413217782974243,
+        0.40988409519195557,
+        0.4079732298851013,
+        0.4047234058380127,
+        0.3999931812286377,
+        0.39635834097862244
+      ],
+      "score_stats": {
+        "mean": 0.4195165365934372,
+        "std": 0.02154204023967886,
+        "min": 0.39635834097862244,
+        "max": 0.46732962131500244
+      }
+    },
+    "Healthcare_Professional_1": {
+      "recommendations": [
+        [
+          "28721300",
+          0.4253304898738861,
+          {
+            "product_id": 28721300,
+            "category_id": 2053013565228450757,
+            "category_code": "apparel.shoes",
+            "brand": "rooman",
+            "price": 64.61
+          }
+        ],
+        [
+          "7005176",
+          0.4139974117279053,
+          {
+            "product_id": 7005176,
+            "category_id": 2053013560346280633,
+            "category_code": "kids.carriage",
+            "brand": "tutis",
+            "price": 469.77
+          }
+        ],
+        [
+          "4000136",
+          0.41334348917007446,
+          {
+            "product_id": 4000136,
+            "category_id": 2053013566142809077,
+            "category_code": "construction.tools.generator",
+            "brand": "philips",
+            "price": 120.96
+          }
+        ],
+        [
+          "4000134",
+          0.4123060703277588,
+          {
+            "product_id": 4000134,
+            "category_id": 2053013566142809077,
+            "category_code": "construction.tools.generator",
+            "brand": "philips",
+            "price": 51.46
+          }
+        ],
+        [
+          "2900629",
+          0.4053826928138733,
+          {
+            "product_id": 2900629,
+            "category_id": 2053013554776244595,
+            "category_code": "appliances.kitchen.microwave",
+            "brand": "panasonic",
+            "price": 87.26
+          }
+        ],
+        [
+          "4000088",
+          0.4038568139076233,
+          {
+            "product_id": 4000088,
+            "category_id": 2053013566142809077,
+            "category_code": "construction.tools.generator",
+            "brand": "saturn",
+            "price": 61.96
+          }
+        ],
+        [
+          "45500019",
+          0.40300828218460083,
+          {
+            "product_id": 45500019,
+            "category_id": 2109094148110811752,
+            "category_code": "computers.notebook",
+            "brand": "trust",
+            "price": 33.44
+          }
+        ],
+        [
+          "1306842",
+          0.39511972665786743,
+          {
+            "product_id": 1306842,
+            "category_id": 2053013558920217191,
+            "category_code": "computers.notebook",
+            "brand": "asus",
+            "price": 1232.39
+          }
+        ],
+        [
+          "3100968",
+          0.39399540424346924,
+          {
+            "product_id": 3100968,
+            "category_id": 2053013555262783879,
+            "category_code": "appliances.kitchen.blender",
+            "brand": "kitfort",
+            "price": 55.34
+          }
+        ],
+        [
+          "28720710",
+          0.3901924192905426,
+          {
+            "product_id": 28720710,
+            "category_id": 2053013565639492569,
+            "category_code": "apparel.shoes",
+            "brand": "respect",
+            "price": 104.25
+          }
+        ]
+      ],
+      "scores": [
+        0.4253304898738861,
+        0.4139974117279053,
+        0.41334348917007446,
+        0.4123060703277588,
+        0.4053826928138733,
+        0.4038568139076233,
+        0.40300828218460083,
+        0.39511972665786743,
+        0.39399540424346924,
+        0.3901924192905426
+      ],
+      "score_stats": {
+        "mean": 0.40565328001976014,
+        "std": 0.010278193456398549,
+        "min": 0.3901924192905426,
+        "max": 0.4253304898738861
+      }
+    },
+    "Healthcare_Professional_2": {
+      "recommendations": [
+        [
+          "1003304",
+          0.5921066552400589,
+          {
+            "product_id": 1003304,
+            "category_id": 2053013555631882655,
+            "category_code": "electronics.smartphone",
+            "brand": "apple",
+            "price": 591.16
+          }
+        ],
+        [
+          "1003311",
+          0.5525129556655884,
+          {
+            "product_id": 1003311,
+            "category_id": 2053013555631882655,
+            "category_code": "electronics.smartphone",
+            "brand": "apple",
+            "price": 782.72
+          }
+        ],
+        [
+          "1002525",
+          0.5521867781877517,
+          {
+            "product_id": 1002525,
+            "category_id": 2053013555631882655,
+            "category_code": "electronics.smartphone",
+            "brand": "apple",
+            "price": 720.48
+          }
+        ],
+        [
+          "1004244",
+          0.5359420239925384,
+          {
+            "product_id": 1004244,
+            "category_id": 2053013555631882655,
+            "category_code": "electronics.smartphone",
+            "brand": "apple",
+            "price": 794.74
+          }
+        ],
+        [
+          "1001618",
+          0.533218777179718,
+          {
+            "product_id": 1001618,
+            "category_id": 2053013555631882655,
+            "category_code": "electronics.smartphone",
+            "brand": "apple",
+            "price": 706.42
+          }
+        ],
+        [
+          "1003305",
+          0.517896881699562,
+          {
+            "product_id": 1003305,
+            "category_id": 2053013555631882655,
+            "category_code": "electronics.smartphone",
+            "brand": "apple",
+            "price": 598.36
+          }
+        ],
+        [
+          "1005208",
+          0.5138653606176377,
+          {
+            "product_id": 1005208,
+            "category_id": 2053013555631882655,
+            "category_code": "electronics.smartphone",
+            "brand": "apple",
+            "price": 385.83
+          }
+        ],
+        [
+          "1002536",
+          0.5083483546972275,
+          {
+            "product_id": 1002536,
+            "category_id": 2053013555631882655,
+            "category_code": "electronics.smartphone",
+            "brand": "apple",
+            "price": 566.04
+          }
+        ],
+        [
+          "1307050",
+          0.48021015524864197,
+          {
+            "product_id": 1307050,
+            "category_id": 2053013558920217191,
+            "category_code": "computers.notebook",
+            "brand": "apple",
+            "price": 1570.17
+          }
+        ],
+        [
+          "1306314",
+          0.47394847869873047,
+          {
+            "product_id": 1306314,
+            "category_id": 2053013558920217191,
+            "category_code": "computers.notebook",
+            "brand": "apple",
+            "price": 1673.12
+          }
+        ]
+      ],
+      "scores": [
+        0.5921066552400589,
+        0.5525129556655884,
+        0.5521867781877517,
+        0.5359420239925384,
+        0.533218777179718,
+        0.517896881699562,
+        0.5138653606176377,
+        0.5083483546972275,
+        0.48021015524864197,
+        0.47394847869873047
+      ],
+      "score_stats": {
+        "mean": 0.5260236421227455,
+        "std": 0.03352653332168817,
+        "min": 0.47394847869873047,
+        "max": 0.5921066552400589
+      }
+    },
+    "Senior_Rural_Retiree": {
+      "recommendations": [
+        [
+          "28721300",
+          0.4459366202354431,
+          {
+            "product_id": 28721300,
+            "category_id": 2053013565228450757,
+            "category_code": "apparel.shoes",
+            "brand": "rooman",
+            "price": 64.61
+          }
+        ],
+        [
+          "7005176",
+          0.4445720911026001,
+          {
+            "product_id": 7005176,
+            "category_id": 2053013560346280633,
+            "category_code": "kids.carriage",
+            "brand": "tutis",
+            "price": 469.77
+          }
+        ],
+        [
+          "28722200",
+          0.43862074613571167,
+          {
+            "product_id": 28722200,
+            "category_id": 2053013565228450757,
+            "category_code": "apparel.shoes",
+            "brand": "respect",
+            "price": 57.4
+          }
+        ],
+        [
+          "28721289",
+          0.41622984409332275,
+          {
+            "product_id": 28721289,
+            "category_id": 2053013565228450757,
+            "category_code": "apparel.shoes",
+            "brand": "strobbs",
+            "price": 62.81
+          }
+        ],
+        [
+          "3800306",
+          0.41412022709846497,
+          {
+            "product_id": 3800306,
+            "category_id": 2053013566176363511,
+            "category_code": "appliances.iron",
+            "brand": "philips",
+            "price": 41.16
+          }
+        ],
+        [
+          "4803486",
+          0.41029611229896545,
+          {
+            "product_id": 4803486,
+            "category_id": 2053013554658804075,
+            "category_code": "electronics.audio.headphone",
+            "brand": "panasonic",
+            "price": 7.23
+          }
+        ],
+        [
+          "3800239",
+          0.4085286557674408,
+          {
+            "product_id": 3800239,
+            "category_id": 2053013566176363511,
+            "category_code": "appliances.iron",
+            "brand": "panasonic",
+            "price": 40.93
+          }
+        ],
+        [
+          "28722253",
+          0.4071718752384186,
+          {
+            "product_id": 28722253,
+            "category_id": 2053013565228450757,
+            "category_code": "apparel.shoes",
+            "brand": "respect",
+            "price": 80.83
+          }
+        ],
+        [
+          "3100968",
+          0.4066306948661804,
+          {
+            "product_id": 3100968,
+            "category_id": 2053013555262783879,
+            "category_code": "appliances.kitchen.blender",
+            "brand": "kitfort",
+            "price": 55.34
+          }
+        ],
+        [
+          "28720725",
+          0.4062337577342987,
+          {
+            "product_id": 28720725,
+            "category_id": 2053013565228450757,
+            "category_code": "apparel.shoes",
+            "brand": "rooman",
+            "price": 62.81
+          }
+        ]
+      ],
+      "scores": [
+        0.4459366202354431,
+        0.4445720911026001,
+        0.43862074613571167,
+        0.41622984409332275,
+        0.41412022709846497,
+        0.41029611229896545,
+        0.4085286557674408,
+        0.4071718752384186,
+        0.4066306948661804,
+        0.4062337577342987
+      ],
+      "score_stats": {
+        "mean": 0.41983406245708466,
+        "std": 0.015589433200374864,
+        "min": 0.4062337577342987,
+        "max": 0.4459366202354431
+      }
+    },
+    "Young_Student": {
+      "recommendations": [
+        [
+          "1004615",
+          0.6055958509445191,
+          {
+            "product_id": 1004615,
+            "category_id": 2053013555631882655,
+            "category_code": "electronics.smartphone",
+            "brand": "bq",
+            "price": 46.8
+          }
+        ],
+        [
+          "1004613",
+          0.580041691660881,
+          {
+            "product_id": 1004613,
+            "category_id": 2053013555631882655,
+            "category_code": "electronics.smartphone",
+            "brand": "bq",
+            "price": 70.25
+          }
+        ],
+        [
+          "1004701",
+          0.5406792104244232,
+          {
+            "product_id": 1004701,
+            "category_id": 2053013555631882655,
+            "category_code": "electronics.smartphone",
+            "brand": "bq",
+            "price": 133.83
+          }
+        ],
+        [
+          "1002827",
+          0.5384625673294068,
+          {
+            "product_id": 1002827,
+            "category_id": 2053013555631882655,
+            "category_code": "electronics.smartphone",
+            "brand": "leeco",
+            "price": 345.36
+          }
+        ],
+        [
+          "1004288",
+          0.5381838500499726,
+          {
+            "product_id": 1004288,
+            "category_id": 2053013555631882655,
+            "category_code": "electronics.smartphone",
+            "brand": "bq",
+            "price": 73.43
+          }
+        ],
+        [
+          "1004400",
+          0.521439465880394,
+          {
+            "product_id": 1004400,
+            "category_id": 2053013555631882655,
+            "category_code": "electronics.smartphone",
+            "brand": "bq",
+            "price": 70.98
+          }
+        ],
+        [
+          "1004284",
+          0.5090191513299942,
+          {
+            "product_id": 1004284,
+            "category_id": 2053013555631882655,
+            "category_code": "electronics.smartphone",
+            "brand": "bq",
+            "price": 50.43
+          }
+        ],
+        [
+          "1004703",
+          0.5076603949069977,
+          {
+            "product_id": 1004703,
+            "category_id": 2053013555631882655,
+            "category_code": "electronics.smartphone",
+            "brand": "bq",
+            "price": 137.94
+          }
+        ],
+        [
+          "1004174",
+          0.504925486445427,
+          {
+            "product_id": 1004174,
+            "category_id": 2053013555631882655,
+            "category_code": "electronics.smartphone",
+            "brand": "tp-link",
+            "price": 94.98
+          }
+        ],
+        [
+          "1002494",
+          0.49925808012485506,
+          {
+            "product_id": 1002494,
+            "category_id": 2053013555631882655,
+            "category_code": "electronics.smartphone",
+            "brand": "sony",
+            "price": 306.65
+          }
+        ]
+      ],
+      "scores": [
+        0.6055958509445191,
+        0.580041691660881,
+        0.5406792104244232,
+        0.5384625673294068,
+        0.5381838500499726,
+        0.521439465880394,
+        0.5090191513299942,
+        0.5076603949069977,
+        0.504925486445427,
+        0.49925808012485506
+      ],
+      "score_stats": {
+        "mean": 0.5345265749096871,
+        "std": 0.03294385275215856,
+        "min": 0.49925808012485506,
+        "max": 0.6055958509445191
+      }
+    },
+    "Zero_Tech_Professional": {
+      "recommendations": [
+        [
+          "28721300",
+          0.45795297622680664,
+          {
+            "product_id": 28721300,
+            "category_id": 2053013565228450757,
+            "category_code": "apparel.shoes",
+            "brand": "rooman",
+            "price": 64.61
+          }
+        ],
+        [
+          "4800369",
+          0.4195270836353302,
+          {
+            "product_id": 4800369,
+            "category_id": 2053013554658804075,
+            "category_code": "electronics.audio.headphone",
+            "brand": "panasonic",
+            "price": 53.44
+          }
+        ],
+        [
+          "2403019",
+          0.38662949204444885,
+          {
+            "product_id": 2403019,
+            "category_id": 2053013563743667055,
+            "category_code": "appliances.kitchen.hood",
+            "brand": "Unknown",
+            "price": 103.03
+          }
+        ],
+        [
+          "17800127",
+          0.3862353265285492,
+          {
+            "product_id": 17800127,
+            "category_id": 2053013559868129947,
+            "category_code": "computers.desktop",
+            "brand": "Unknown",
+            "price": 52.74
+          }
+        ],
+        [
+          "28720725",
+          0.3851813077926636,
+          {
+            "product_id": 28720725,
+            "category_id": 2053013565228450757,
+            "category_code": "apparel.shoes",
+            "brand": "rooman",
+            "price": 62.81
+          }
+        ],
+        [
+          "3700828",
+          0.38466233015060425,
+          {
+            "product_id": 3700828,
+            "category_id": 2053013565983425517,
+            "category_code": "appliances.environment.vacuum",
+            "brand": "philips",
+            "price": 319.16
+          }
+        ],
+        [
+          "28717990",
+          0.38346192240715027,
+          {
+            "product_id": 28717990,
+            "category_id": 2053013565639492569,
+            "category_code": "apparel.shoes",
+            "brand": "Unknown",
+            "price": 129.99
+          }
+        ],
+        [
+          "100008810",
+          0.3829501271247864,
+          {
+            "product_id": 100008810,
+            "category_id": 2053013565228450757,
+            "category_code": "apparel.shoes",
+            "brand": "greyder",
+            "price": 141.57
+          }
+        ],
+        [
+          "28719130",
+          0.36935412883758545,
+          {
+            "product_id": 28719130,
+            "category_id": 2053013565639492569,
+            "category_code": "apparel.shoes",
+            "brand": "Unknown",
+            "price": 163.97
+          }
+        ],
+        [
+          "4803486",
+          0.3686939775943756,
+          {
+            "product_id": 4803486,
+            "category_id": 2053013554658804075,
+            "category_code": "electronics.audio.headphone",
+            "brand": "panasonic",
+            "price": 7.23
+          }
+        ]
+      ],
+      "scores": [
+        0.45795297622680664,
+        0.4195270836353302,
+        0.38662949204444885,
+        0.3862353265285492,
+        0.3851813077926636,
+        0.38466233015060425,
+        0.38346192240715027,
+        0.3829501271247864,
+        0.36935412883758545,
+        0.3686939775943756
+      ],
+      "score_stats": {
+        "mean": 0.39246486723423,
+        "std": 0.025453073092400812,
+        "min": 0.3686939775943756,
+        "max": 0.45795297622680664
+      }
+    },
+    "Zero_Healthcare_Professional": {
+      "recommendations": [
+        [
+          "28721300",
+          0.4302283227443695,
+          {
+            "product_id": 28721300,
+            "category_id": 2053013565228450757,
+            "category_code": "apparel.shoes",
+            "brand": "rooman",
+            "price": 64.61
+          }
+        ],
+        [
+          "28720710",
+          0.40398257970809937,
+          {
+            "product_id": 28720710,
+            "category_id": 2053013565639492569,
+            "category_code": "apparel.shoes",
+            "brand": "respect",
+            "price": 104.25
+          }
+        ],
+        [
+          "28717990",
+          0.4027714133262634,
+          {
+            "product_id": 28717990,
+            "category_id": 2053013565639492569,
+            "category_code": "apparel.shoes",
+            "brand": "Unknown",
+            "price": 129.99
+          }
+        ],
+        [
+          "4800369",
+          0.39874520897865295,
+          {
+            "product_id": 4800369,
+            "category_id": 2053013554658804075,
+            "category_code": "electronics.audio.headphone",
+            "brand": "panasonic",
+            "price": 53.44
+          }
+        ],
+        [
+          "2900629",
+          0.39070969820022583,
+          {
+            "product_id": 2900629,
+            "category_id": 2053013554776244595,
+            "category_code": "appliances.kitchen.microwave",
+            "brand": "panasonic",
+            "price": 87.26
+          }
+        ],
+        [
+          "2403019",
+          0.37184956669807434,
+          {
+            "product_id": 2403019,
+            "category_id": 2053013563743667055,
+            "category_code": "appliances.kitchen.hood",
+            "brand": "Unknown",
+            "price": 103.03
+          }
+        ],
+        [
+          "3700828",
+          0.36089155077934265,
+          {
+            "product_id": 3700828,
+            "category_id": 2053013565983425517,
+            "category_code": "appliances.environment.vacuum",
+            "brand": "philips",
+            "price": 319.16
+          }
+        ],
+        [
+          "28720592",
+          0.36081457138061523,
+          {
+            "product_id": 28720592,
+            "category_id": 2053013565782098913,
+            "category_code": "apparel.shoes",
+            "brand": "Unknown",
+            "price": 101.68
+          }
+        ],
+        [
+          "4803186",
+          0.35583990812301636,
+          {
+            "product_id": 4803186,
+            "category_id": 2053013554658804075,
+            "category_code": "electronics.audio.headphone",
+            "brand": "harper",
+            "price": 25.71
+          }
+        ],
+        [
+          "28720725",
+          0.3553726077079773,
+          {
+            "product_id": 28720725,
+            "category_id": 2053013565228450757,
+            "category_code": "apparel.shoes",
+            "brand": "rooman",
+            "price": 62.81
+          }
+        ]
+      ],
+      "scores": [
+        0.4302283227443695,
+        0.40398257970809937,
+        0.4027714133262634,
+        0.39874520897865295,
+        0.39070969820022583,
+        0.37184956669807434,
+        0.36089155077934265,
+        0.36081457138061523,
+        0.35583990812301636,
+        0.3553726077079773
+      ],
+      "score_stats": {
+        "mean": 0.3831205427646637,
+        "std": 0.02444411990709077,
+        "min": 0.3553726077079773,
+        "max": 0.4302283227443695
+      }
+    },
+    "Zero_Different_Demographics": {
+      "recommendations": [
+        [
+          "28721300",
+          0.43235886096954346,
+          {
+            "product_id": 28721300,
+            "category_id": 2053013565228450757,
+            "category_code": "apparel.shoes",
+            "brand": "rooman",
+            "price": 64.61
+          }
+        ],
+        [
+          "4800369",
+          0.40429583191871643,
+          {
+            "product_id": 4800369,
+            "category_id": 2053013554658804075,
+            "category_code": "electronics.audio.headphone",
+            "brand": "panasonic",
+            "price": 53.44
+          }
+        ],
+        [
+          "28717990",
+          0.3897518217563629,
+          {
+            "product_id": 28717990,
+            "category_id": 2053013565639492569,
+            "category_code": "apparel.shoes",
+            "brand": "Unknown",
+            "price": 129.99
+          }
+        ],
+        [
+          "4803611",
+          0.3862227201461792,
+          {
+            "product_id": 4803611,
+            "category_id": 2053013554658804075,
+            "category_code": "electronics.audio.headphone",
+            "brand": "panasonic",
+            "price": 5.2
+          }
+        ],
+        [
+          "4803486",
+          0.384755939245224,
+          {
+            "product_id": 4803486,
+            "category_id": 2053013554658804075,
+            "category_code": "electronics.audio.headphone",
+            "brand": "panasonic",
+            "price": 7.23
+          }
+        ],
+        [
+          "28720710",
+          0.3759344816207886,
+          {
+            "product_id": 28720710,
+            "category_id": 2053013565639492569,
+            "category_code": "apparel.shoes",
+            "brand": "respect",
+            "price": 104.25
+          }
+        ],
+        [
+          "2403019",
+          0.36666786670684814,
+          {
+            "product_id": 2403019,
+            "category_id": 2053013563743667055,
+            "category_code": "appliances.kitchen.hood",
+            "brand": "Unknown",
+            "price": 103.03
+          }
+        ],
+        [
+          "3700828",
+          0.36656051874160767,
+          {
+            "product_id": 3700828,
+            "category_id": 2053013565983425517,
+            "category_code": "appliances.environment.vacuum",
+            "brand": "philips",
+            "price": 319.16
+          }
+        ],
+        [
+          "2900629",
+          0.3599095642566681,
+          {
+            "product_id": 2900629,
+            "category_id": 2053013554776244595,
+            "category_code": "appliances.kitchen.microwave",
+            "brand": "panasonic",
+            "price": 87.26
+          }
+        ],
+        [
+          "28720725",
+          0.3588297963142395,
+          {
+            "product_id": 28720725,
+            "category_id": 2053013565228450757,
+            "category_code": "apparel.shoes",
+            "brand": "rooman",
+            "price": 62.81
+          }
+        ]
+      ],
+      "scores": [
+        0.43235886096954346,
+        0.40429583191871643,
+        0.3897518217563629,
+        0.3862227201461792,
+        0.384755939245224,
+        0.3759344816207886,
+        0.36666786670684814,
+        0.36656051874160767,
+        0.3599095642566681,
+        0.3588297963142395
+      ],
+      "score_stats": {
+        "mean": 0.3825287401676178,
+        "std": 0.021566012011434457,
+        "min": 0.3588297963142395,
+        "max": 0.43235886096954346
+      }
+    }
+  },
+  "diversity_analysis": {
+    "total_recommendations": 100,
+    "unique_items": 54,
+    "diversity_ratio": 0.54,
+    "top_10_concentration": 42.0,
+    "most_popular_items": [
+      [
+        "28721300",
+        8
+      ],
+      [
+        "7005176",
+        5
+      ],
+      [
+        "3700828",
+        5
+      ],
+      [
+        "28720725",
+        5
+      ],
+      [
+        "4000088",
+        4
+      ]
+    ]
+  }
+}

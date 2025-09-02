@@ -377,7 +377,7 @@ async def get_recommendations(request: RecommendationRequest):
         
         # Generate recommendations based on type
         if request.recommendation_type == "collaborative":
-            recommendations = recommendation_engine.recommend_items_collaborative(
+            recommendations = recommendation_engine.recommend_items_raw_two_tower(
                 age=user_profile.age,
                 gender=user_profile.gender,
                 income=user_profile.income,

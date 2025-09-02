@@ -97,16 +97,27 @@ class UserTower(tf.keras.Model):
         # Create attention mask for padding
         history_mask = tf.reduce_sum(tf.abs(item_history), axis=-1) > 0  # [batch_size, seq_len]
         
-        # Self-attention on history (remove attention_mask due to shape issues)
+        # Check if users have any interactions at all
+        has_any_interactions = tf.reduce_any(history_mask, axis=1)  # [batch_size]
+        
+        # For users with interactions: apply attention mechanism
+        # Reshape mask for MultiHeadAttention: [batch_size, 1, seq_len] -> broadcasts to [batch_size, seq_len, seq_len]
+        attention_mask = tf.expand_dims(history_mask, axis=1)  # [batch_size, 1, seq_len]
+        
+        # Self-attention on history with proper masking
         attended_history = self.history_attention(
             query=item_history,
             value=item_history,
             key=item_history,
+            attention_mask=attention_mask,
             training=training
         )
         
-        # Mean pooling over history length
-        history_aggregated = tf.reduce_mean(attended_history, axis=1)
+        # Masked mean pooling over history length (only average over non-padding tokens)
+        history_aggregated = self._masked_mean_pooling(attended_history, history_mask)
+        
+        # For zero-interaction users, history_aggregated will be all zeros due to masked pooling
+        # This is correct behavior - they should rely entirely on demographic features
         
         # Combine all features
         combined = tf.concat([
@@ -130,6 +141,38 @@ class UserTower(tf.keras.Model):
         
         # L2 normalize for similarity computations
         return tf.nn.l2_normalize(output, axis=-1)
+    
+    def _masked_mean_pooling(self, sequence: tf.Tensor, mask: tf.Tensor) -> tf.Tensor:
+        """
+        Perform masked mean pooling over sequence dimension.
+        
+        Args:
+            sequence: [batch_size, seq_len, embedding_dim]
+            mask: [batch_size, seq_len] - True for valid positions, False for padding
+            
+        Returns:
+            pooled: [batch_size, embedding_dim]
+        """
+        # Convert mask to float and add dimension for broadcasting
+        mask_float = tf.cast(mask, tf.float32)  # [batch_size, seq_len]
+        mask_expanded = tf.expand_dims(mask_float, axis=-1)  # [batch_size, seq_len, 1]
+        
+        # Apply mask to sequence (zero out padding positions)
+        masked_sequence = sequence * mask_expanded  # [batch_size, seq_len, embedding_dim]
+        
+        # Sum over sequence dimension
+        sequence_sum = tf.reduce_sum(masked_sequence, axis=1)  # [batch_size, embedding_dim]
+        
+        # Count valid (non-padding) positions per batch item
+        valid_counts = tf.reduce_sum(mask_float, axis=1, keepdims=True)  # [batch_size, 1]
+        
+        # Avoid division by zero for users with no interactions
+        valid_counts = tf.maximum(valid_counts, 1.0)
+        
+        # Compute mean only over valid positions
+        pooled = sequence_sum / valid_counts  # [batch_size, embedding_dim]
+        
+        return pooled
 
 
 class TwoTowerModel(tfrs.Model):
