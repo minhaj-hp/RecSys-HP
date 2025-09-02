@@ -41,7 +41,6 @@ function App() {
   const [sampleItems, setSampleItems] = useState([]);
   const [interactions, setInteractions] = useState([]);
   
-  const [expandedInteraction, setExpandedInteraction] = useState(null);
   const [selectedPattern, setSelectedPattern] = useState(null);
   
   // Real user data states
@@ -474,11 +473,6 @@ function App() {
     }
   };
 
-  const toggleInteractionExpand = (interactionId) => {
-    setExpandedInteraction(
-      expandedInteraction === interactionId ? null : interactionId
-    );
-  };
 
   const clearInteractions = () => {
     setInteractions([]);
@@ -1302,42 +1296,6 @@ function App() {
                 </div>
               </div>
               
-              {/* Custom User Interaction Summary - Similar to Real User Summary */}
-              {(selectedBehavioralPattern || interactions.length > 0) && (
-                <div className="custom-interaction-summary">
-                  {selectedBehavioralPattern ? (
-                    <>
-                      <div className="summary-card views">
-                        <div className="summary-number">{selectedBehavioralPattern.stats.views}</div>
-                        <div className="summary-label">Views</div>
-                      </div>
-                      <div className="summary-card carts">
-                        <div className="summary-number">{selectedBehavioralPattern.stats.cart_adds}</div>
-                        <div className="summary-label">Cart Adds</div>
-                      </div>
-                      <div className="summary-card purchases">
-                        <div className="summary-number">{selectedBehavioralPattern.stats.purchases}</div>
-                        <div className="summary-label">Purchases</div>
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <div className="summary-card views">
-                        <div className="summary-number">{counts.views || 0}</div>
-                        <div className="summary-label">Views</div>
-                      </div>
-                      <div className="summary-card carts">
-                        <div className="summary-number">{counts.carts || 0}</div>
-                        <div className="summary-label">Cart Adds</div>
-                      </div>
-                      <div className="summary-card purchases">
-                        <div className="summary-number">{counts.purchases || 0}</div>
-                        <div className="summary-label">Purchases</div>
-                      </div>
-                    </>
-                  )}
-                </div>
-              )}
 
               {/* Custom History Info - Similar to Real User Info */}
               {(selectedBehavioralPattern || interactions.length > 0) && (
@@ -1594,100 +1552,6 @@ function App() {
             </>
           )}
 
-          {interactions.length > 0 && (
-            <>
-              <div className="pattern-summary">
-                <div className="summary-card views">
-                  <div className="summary-number">{counts.views || 0}</div>
-                  <div className="summary-label">Views</div>
-                </div>
-                <div className="summary-card carts">
-                  <div className="summary-number">{counts.carts || 0}</div>
-                  <div className="summary-label">Cart Adds</div>
-                </div>
-                <div className="summary-card purchases">
-                  <div className="summary-number">{counts.purchases || 0}</div>
-                  <div className="summary-label">Purchases</div>
-                </div>
-              </div>
-
-              <div className="interaction-history">
-                <h3>Interaction History ({interactions.length} events)</h3>
-                {interactions.map((interaction) => (
-                  <div key={interaction.id} className="interaction-item">
-                    <div className="interaction-main">
-                      <span className={`interaction-type ${interaction.type}`}>
-                        {interaction.type}
-                      </span>
-                      <span className="interaction-details">
-                        <strong>{interaction.brand}</strong> - <span className="category-tag">{interaction.category}</span> - ${interaction.price}
-                        {interaction.quantity && ` (x${interaction.quantity})`}
-                        {interaction.total_amount && ` = $${interaction.total_amount}`}
-                      </span>
-                      <span style={{fontSize: '12px', color: '#888'}}>
-                        {new Date(interaction.timestamp).toLocaleString()}
-                      </span>
-                    </div>
-                    <button
-                      className="interaction-expand"
-                      onClick={() => toggleInteractionExpand(interaction.id)}
-                    >
-                      {expandedInteraction === interaction.id ? 'Hide' : 'Details'}
-                    </button>
-                  </div>
-                ))}
-                
-                {expandedInteraction && (
-                  <div className="interaction-expanded">
-                    {(() => {
-                      const expanded = interactions.find(i => i.id === expandedInteraction);
-                      return (
-                        <div className="interaction-meta">
-                          <div className="interaction-meta-item">
-                            <span className="interaction-meta-label">Product ID:</span>
-                            <span className="interaction-meta-value">{expanded.item_id}</span>
-                          </div>
-                          <div className="interaction-meta-item">
-                            <span className="interaction-meta-label">Brand:</span>
-                            <span className="interaction-meta-value">{expanded.brand}</span>
-                          </div>
-                          <div className="interaction-meta-item">
-                            <span className="interaction-meta-label">Category:</span>
-                            <span className="interaction-meta-value">{expanded.category}</span>
-                          </div>
-                          <div className="interaction-meta-item">
-                            <span className="interaction-meta-label">Price:</span>
-                            <span className="interaction-meta-value">${expanded.price}</span>
-                          </div>
-                          <div className="interaction-meta-item">
-                            <span className="interaction-meta-label">Timestamp:</span>
-                            <span className="interaction-meta-value">{expanded.timestamp}</span>
-                          </div>
-                          <div className="interaction-meta-item">
-                            <span className="interaction-meta-label">Session:</span>
-                            <span className="interaction-meta-value">{expanded.session_id}</span>
-                          </div>
-                          {expanded.quantity && (
-                            <div className="interaction-meta-item">
-                              <span className="interaction-meta-label">Quantity:</span>
-                              <span className="interaction-meta-value">{expanded.quantity}</span>
-                            </div>
-                          )}
-                          {expanded.total_amount && (
-                            <div className="interaction-meta-item">
-                              <span className="interaction-meta-label">Total Amount:</span>
-                              <span className="interaction-meta-value">${expanded.total_amount}</span>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })()}
-                  </div>
-                )}
-              </div>
-
-            </>
-          )}
         </div>
 
         {/* Category Selection */}

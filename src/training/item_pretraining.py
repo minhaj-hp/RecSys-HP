@@ -52,6 +52,7 @@ class ItemTowerPretrainer:
         self.item_tower = ItemTower(
             item_vocab_size=item_vocab_size,
             category_vocab_size=category_vocab_size,
+            category_code_vocab_size=category_vocab_size,  # Use same size as category vocab for now
             brand_vocab_size=brand_vocab_size,
             embedding_dim=self.embedding_dim,
             hidden_dims=self.hidden_dims,
@@ -169,6 +170,7 @@ class ItemTowerPretrainer:
         self.item_tower = ItemTower(
             item_vocab_size=item_vocab_size,
             category_vocab_size=category_vocab_size,
+            category_code_vocab_size=category_vocab_size,  # Use same size as category vocab
             brand_vocab_size=brand_vocab_size,
             **config
         )

@@ -51,6 +51,7 @@ class JointTrainer:
         self.item_tower = ItemTower(
             item_vocab_size=len(data_processor.item_vocab),
             category_vocab_size=len(data_processor.category_vocab),
+            category_code_vocab_size=len(data_processor.category_vocab),  # Use same size as category vocab
             brand_vocab_size=len(data_processor.brand_vocab),
             **config
         )
