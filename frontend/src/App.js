@@ -26,7 +26,7 @@ function App() {
     interaction_history: []
   });
   
-  const [recommendationType, setRecommendationType] = useState('hybrid');
+  const [recommendationType, setRecommendationType] = useState('category_boosted');
   const [numRecommendations, setNumRecommendations] = useState(10);
   const [collaborativeWeight, setCollaborativeWeight] = useState(0.7);
   
@@ -1606,10 +1606,10 @@ function App() {
                 value={recommendationType}
                 onChange={(e) => setRecommendationType(e.target.value)}
               >
-                <option value="hybrid">Hybrid (Recommended)</option>
+                <option value="category_boosted">📊 Category Boosted (50% from user categories) - Default</option>
+                <option value="hybrid">Hybrid (Alternative)</option>
                 <option value="collaborative">Raw Two-Tower Retrieval</option>
                 <option value="content">Content-Based</option>
-                <option value="category_boosted">📊 Category Boosted (50% from user categories)</option>
               </select>
             </div>
             

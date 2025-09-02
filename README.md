@@ -1,6 +1,6 @@
 # Advanced Two-Tower Recommendation System
 
-A production-ready recommendation system implementation using TensorFlow Recommenders with an enhanced two-tower architecture. This system provides personalized item recommendations through collaborative filtering, **aggregated history content-based filtering**, and hybrid approaches, featuring categorical demographics, curriculum learning, and advanced training strategies.
+A production-ready recommendation system implementation using TensorFlow with an enhanced two-tower architecture. This system provides personalized item recommendations through collaborative filtering, content-based filtering, category-boosted recommendations, and hybrid approaches, featuring categorical demographics and advanced training strategies.
 
 ## 🎯 Project Overview
 
@@ -8,14 +8,14 @@ This recommendation system addresses the challenge of providing personalized ite
 
 ### Key Features
 - **🎯 Categorical Demographics**: Intelligent age/income categorization for better personalization
-- **🧠 Enhanced Two-Tower Architecture**: 128D embeddings with temperature scaling and contrastive learning
-- **📚 Curriculum Learning**: Progressive training strategy for improved convergence
+- **🧠 Enhanced Two-Tower Architecture**: 128D embeddings with advanced neural networks
+- **📚 Advanced Training Pipeline**: Multi-phase training with curriculum learning
 - **⚡ Real-time Inference**: Sub-100ms recommendation serving with FAISS indexing
-- **🔄 Multi-strategy Recommendations**: Collaborative, **aggregated history content-based**, and hybrid approaches
-- **🎪 Category-Aware Boosting**: Enhanced personalization through user preference alignment
-- **🔍 Interactive Similar Items**: Click-to-explore with 60/40 category-balanced discovery
-- **📊 Comprehensive Analysis**: Quality metrics and performance evaluation tools
-- **🌐 Production Ready**: Complete API with React frontend and proper error handling
+- **🔄 Multi-strategy Recommendations**: Raw two-tower, category-boosted, content-based, and hybrid approaches
+- **🎪 Category-Aware Boosting**: 60/40 split between user categories and exploration
+- **🔍 Interactive Similar Items**: Click-to-explore with category-balanced discovery
+- **📊 Comprehensive Testing**: Quality metrics and performance evaluation tools
+- **🌐 Production Ready**: Complete FastAPI backend with React frontend
 
 ## 🏗️ Enhanced Architecture Overview
 
@@ -198,7 +198,7 @@ cd frontend && npm install && cd ..
 # datasets/items.csv     - Item features and metadata
 
 # Verify dataset structure
-python -c "from src.data_processing.data_loader import DataLoader; dl = DataLoader(); print('✅ Datasets loaded successfully')"
+python -c "from src.preprocessing.data_loader import DataProcessor; dp = DataProcessor(); print('✅ Datasets loaded successfully')"
 ```
 
 ### 2. Training Options
@@ -208,25 +208,19 @@ Choose from multiple training approaches based on your needs:
 #### Option A: Main Training Pipeline (Recommended) 🌟
 ```bash
 # Complete end-to-end training pipeline (20-30 minutes)
-python run_training_pipeline.py
+python scripts/run_training_pipeline.py
 ```
 
-#### Option B: Enhanced Model Training
-```bash
-# Train improved model with categorical demographics and curriculum learning
-python train_improved_model.py --embedding-dim 128 --epochs-per-stage 15
-```
-
-#### Option C: 2-Phase Training Approach
+#### Option B: 2-Phase Training Approach
 ```bash
 # 2-phase training: item pretraining + joint optimization
-python run_2phase_training.py
+python scripts/run_2phase_training.py
 ```
 
-#### Option D: Joint Training Approach  
+#### Option C: Joint Training Approach  
 ```bash
 # Direct joint training of both towers
-python run_joint_training.py
+python scripts/run_joint_training.py
 ```
 
 **Enhanced Training Features:**
@@ -238,24 +232,13 @@ python run_joint_training.py
 
 ### 3. Start Interactive Demo 🎮
 
-Choose your preferred API implementation:
-
-#### Primary API (Recommended)
+#### Launch the Application
 ```bash
-# Launch main API server (in one terminal)
+# Launch API server (in one terminal)
 cd api && python main.py
 
 # Start React frontend (in another terminal)
 cd frontend && npm start
-```
-
-#### Alternative API Options
-```bash
-# 2-Phase Training API
-python api_2phase.py &
-
-# Joint Training API  
-python api_joint.py &
 ```
 
 **Access Points:**
@@ -270,31 +253,31 @@ python api_joint.py &
 python analyze_recommendations.py
 ```
 
-## 🎯 Enhanced Recommendation Strategies
+## 🎯 Recommendation Strategies
 
-### 1. Collaborative Filtering 👥
+### 1. Raw Two-Tower (Collaborative Filtering) 👥
 - **Method**: Enhanced user-item interaction patterns with categorical demographics
-- **Improvements**: 128D embeddings, temperature scaling, bias terms
+- **Features**: 128D embeddings, category boosting (1.6x), FAISS similarity search
 - **Strengths**: Superior personalization with behavioral signal focus
-- **Algorithm**: Enhanced two-tower neural collaborative filtering
+- **Algorithm**: Two-tower neural collaborative filtering with category awareness
 
-### 2. Content-Based Filtering 📊  
-- **Method**: Advanced item feature similarity with attention mechanisms
-- **Improvements**: Multi-head attention, enhanced embeddings
+### 2. Category-Boosted Recommendations 🎪
+- **Method**: Strict 60/40 split between user categories and exploration
+- **Features**: Proportional distribution within user categories, parent category fallback
+- **Benefits**: Balanced personalization with controlled exploration
+- **Algorithm**: Category-aware recommendation with boost factor (1.3x)
+
+### 3. Content-Based Filtering 📊  
+- **Method**: Item feature similarity and aggregated user history
+- **Features**: FAISS-based embedding similarity, category constraints
 - **Strengths**: Better cold-start performance, explainable recommendations
-- **Algorithm**: FAISS-based enhanced embedding similarity
+- **Algorithm**: Enhanced embedding similarity with category balancing
 
-### 3. Enhanced Hybrid Approach 🔗
-- **Method**: Category-aware weighted combination with boosting
-- **Improvements**: User preference analysis, category alignment boosting
-- **Features**: Diversity controls, explanation generation
-- **Algorithm**: Intelligent weight mixing with category-specific enhancements
-
-### 4. Category-Focused Recommendations 🎪
-- **Method**: User preference-driven category prioritization
-- **Features**: Focus percentage control (70% preferred, 30% exploration)
-- **Benefits**: Improved category alignment and personalization
-- **Use Case**: Users with established category preferences
+### 4. Hybrid Approach 🔗
+- **Method**: Weighted combination of collaborative and content-based
+- **Features**: Configurable weight mixing (default 70% collaborative, 30% content)
+- **Benefits**: Best of both approaches with balanced coverage
+- **Algorithm**: Score-based weighted combination
 
 ## 🔬 Technical Deep Dive
 

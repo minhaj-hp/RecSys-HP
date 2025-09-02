@@ -737,8 +737,16 @@ class RecommendationEngine:
                                        marital_status: str = "Single",
                                        interaction_history: List[int] = None,
                                        k: int = 10,
-                                       exclude_history: bool = True) -> List[Tuple[int, float, Dict]]:
-        """Generate category-boosted recommendations ensuring 50% from user's interacted categories."""
+                                       exclude_history: bool = True,
+                                       boost_factor: float = 1.3) -> List[Tuple[int, float, Dict]]:
+        """Generate category-boosted recommendations with 60% from user's interacted categories and 40% exploration.
+        
+        Args:
+            boost_factor: Multiplicative boost applied to scores of items from user-interacted categories (default: 1.3)
+            
+        Returns:
+            List of recommendations with 60% from user categories (proportionally distributed) and 40% exploration.
+        """
         
         if not interaction_history or len(interaction_history) == 0:
             # Fallback to collaborative filtering if no interaction history
@@ -757,9 +765,10 @@ class RecommendationEngine:
                 interaction_history, k, exclude_history
             )
         
-        # Step 2: Get enhanced user embedding and do wide search (increased for better subcategory coverage)
+        # Step 2: Get enhanced user embedding and do wide search for diverse candidates
         user_embedding = self.get_user_embedding(age, gender, income, profession, location, education_level, marital_status, interaction_history)
-        similar_items = self.faiss_index.search_by_embedding(user_embedding, k * 10)  # Increased from k*6 to k*10
+        # Use wider search scope to ensure adequate candidates from user categories
+        similar_items = self.faiss_index.search_by_embedding(user_embedding, k * 20)  # 20x search for better category coverage
         
         # Step 3: Organize candidates by subcategory with parent fallback
         category_candidates = {category: [] for category in category_percentages.keys()}
@@ -794,35 +803,43 @@ class RecommendationEngine:
                 else:
                     item_subcategory = full_item_category
                 
-                # Try exact subcategory match first
+                # Apply boost factor to items from user-interacted categories
                 if item_subcategory in category_percentages:
-                    category_candidates[item_subcategory].append((item_id, score))
+                    # Apply boost for exact subcategory matches (user-interacted categories)
+                    boosted_score = score * boost_factor
+                    category_candidates[item_subcategory].append((item_id, boosted_score))
                 else:
-                    # Fallback: try parent category match
+                    # Check for parent category match as fallback
                     parent_category = item_subcategory.split('.')[0] if '.' in item_subcategory else item_subcategory
-                    matched = False
+                    found_parent_match = False
+                    for user_category in category_percentages.keys():
+                        user_parent = user_category.split('.')[0] if '.' in user_category else user_category
+                        if parent_category == user_parent:
+                            # Apply smaller boost for parent category matches
+                            boosted_score = score * (boost_factor * 0.8)  # Reduced boost for broader matches
+                            category_candidates[user_category].append((item_id, boosted_score))
+                            found_parent_match = True
+                            break
                     
-                    if parent_category in parent_category_mapping:
-                        # Add to the first subcategory of this parent (round-robin could be improved later)
-                        target_subcategory = parent_category_mapping[parent_category][0]
-                        category_candidates[target_subcategory].append((item_id, score))
-                        matched = True
-                    
-                    if not matched:
+                    if not found_parent_match:
+                        # No category match at all - goes to exploration
                         other_candidates.append((item_id, score))
         
-        # Step 4: Calculate target counts for each subcategory (50% distributed proportionally)
-        category_target_count = max(1, k // 2)  # At least 50% from user categories
+        
+        # Step 4: Calculate target counts for each subcategory (60% distributed proportionally)
+        category_target_count = max(1, int(k * 0.6))  # 60% from user categories
+        exploration_target_count = k - category_target_count  # 40% for exploration
         
         # Calculate proportional distribution with proper rounding
         category_counts = self._calculate_proportional_distribution(
             category_percentages, category_target_count
         )
         
-        # Step 5: Select items with round-robin filling and rebalancing
-        selected_recommendations = []
+        # Step 5: Build final recommendations with strict 60/40 split
+        final_recommendations = []
         
-        # Fill from user's categories with rebalancing for insufficient candidates
+        # FIRST: Fill exactly 60% from user categories
+        target_user_category_count = int(k * 0.6)
         actual_selections = {}
         unused_allocations = {}
         
@@ -831,7 +848,6 @@ class RecommendationEngine:
             available_count = len(candidates)
             selected_count = min(target_count, available_count)
             
-            print(f"[DEBUG] Category {category}: target={target_count}, available={available_count}, selected={selected_count}")
             
             actual_selections[category] = selected_count
             if selected_count < target_count:
@@ -841,68 +857,79 @@ class RecommendationEngine:
             for i in range(selected_count):
                 item_id, score = candidates[i]
                 item_info = self._get_item_info(item_id)
-                selected_recommendations.append((item_id, score, item_info))
+                final_recommendations.append((item_id, score, item_info))
         
-        # Step 6: Redistribute unused allocations proportionally
+        # Step 6: Maintain strict 60/40 split - unused user category slots go to exploration
         total_unused = sum(unused_allocations.values())
         if total_unused > 0:
-            print(f"[DEBUG] Redistributing {total_unused} unused slots")
-            
-            # Find categories with remaining candidates for redistribution
-            categories_with_extras = {}
-            for category, candidates in category_candidates.items():
-                used_count = actual_selections.get(category, 0)
-                available_extras = len(candidates) - used_count
-                if available_extras > 0:
-                    categories_with_extras[category] = available_extras
-            
-            # Redistribute based on original proportions and availability
-            redistributed = 0
-            for category in sorted(categories_with_extras.keys(), key=lambda c: category_percentages.get(c, 0), reverse=True):
-                if redistributed >= total_unused:
-                    break
-                
-                extra_slots = min(unused_allocations.get(category, 0) + 1, categories_with_extras[category])
-                candidates = sorted(category_candidates[category], key=lambda x: x[1], reverse=True)
-                used_count = actual_selections.get(category, 0)
-                
-                for i in range(used_count, min(used_count + extra_slots, len(candidates))):
-                    if redistributed >= total_unused:
-                        break
-                    item_id, score = candidates[i]
-                    item_info = self._get_item_info(item_id)
-                    selected_recommendations.append((item_id, score, item_info))
-                    redistributed += 1
+            # Add unused user category slots to exploration quota
+            exploration_target_count += total_unused
                     
-        # Step 7: Fill remaining slots with diverse recommendations
-        remaining_slots = k - len(selected_recommendations)
+        # SECOND: Fill exactly 40% (plus unused slots) from exploration categories  
+        exploration_slots_needed = k - len(final_recommendations)  # Remaining slots
+        
+        # Get IDs already selected from user categories to avoid duplicates
+        selected_item_ids = set(rec[0] for rec in final_recommendations)
+        
+        # Fill exploration slots from other_candidates (non-interacted categories) 
+        if exploration_slots_needed > 0:
+            if other_candidates:
+                # Sort other candidates by score (original scores, not boosted)
+                sorted_exploration_candidates = sorted(other_candidates, key=lambda x: x[1], reverse=True)
+                
+                
+                filled_exploration = 0
+                for item_id, score in sorted_exploration_candidates:
+                    if filled_exploration >= exploration_slots_needed:
+                        break
+                    if item_id not in selected_item_ids:  # Avoid duplicates
+                        item_info = self._get_item_info(item_id)
+                        final_recommendations.append((item_id, score, item_info))
+                        selected_item_ids.add(item_id)
+                        filled_exploration += 1
+            else:
+                # If no exploration candidates found, get some diverse items by sampling from different categories
+                try:
+                    diverse_items = self._get_diverse_exploration_items(category_percentages.keys(), exploration_slots_needed, selected_item_ids)
+                    final_recommendations.extend(diverse_items)
+                except Exception as e:
+                    pass  # Continue with available recommendations
+        
+        # THIRD: Fill any remaining slots if needed
+        remaining_slots = k - len(final_recommendations)
         if remaining_slots > 0:
-            # Collect all unused candidates (both from user categories and other categories)
+            
+            # Update selected items set
+            selected_item_ids = set(rec[0] for rec in final_recommendations)
+            
+            # Collect unused items from user categories
             all_remaining = []
-            
-            # Add unused items from user categories
             for category, candidates in category_candidates.items():
-                used_count = len([rec for rec in selected_recommendations if rec[2].get('category_code', '').startswith(category.split('.')[0])])
                 sorted_candidates = sorted(candidates, key=lambda x: x[1], reverse=True)
-                for i in range(used_count, len(sorted_candidates)):
-                    all_remaining.append(sorted_candidates[i])
+                for item_id, score in sorted_candidates:
+                    if item_id not in selected_item_ids:
+                        all_remaining.append((item_id, score))
             
-            # Add items from other categories
-            all_remaining.extend(other_candidates)
+            # Add any remaining exploration candidates not yet used
+            for item_id, score in other_candidates:
+                if item_id not in selected_item_ids:
+                    all_remaining.append((item_id, score))
             
             # Sort by score and take best remaining
             all_remaining.sort(key=lambda x: x[1], reverse=True)
             
-            print(f"[DEBUG] Filling {remaining_slots} remaining slots from {len(all_remaining)} candidates")
-            
             for i in range(min(remaining_slots, len(all_remaining))):
                 item_id, score = all_remaining[i]
-                item_info = self._get_item_info(item_id)
-                selected_recommendations.append((item_id, score, item_info))
+                if item_id not in selected_item_ids:
+                    item_info = self._get_item_info(item_id)
+                    final_recommendations.append((item_id, score, item_info))
+                    selected_item_ids.add(item_id)
         
-        # Step 7: Sort final recommendations by score and return top k
-        selected_recommendations.sort(key=lambda x: x[1], reverse=True)
-        return selected_recommendations[:k]
+        # Step 8: Return final recommendations with strict 60/40 split maintained
+        result_recommendations = final_recommendations[:k]
+        
+        
+        return result_recommendations
     
     def _calculate_category_percentages(self, interaction_history: List[int]) -> Dict[str, float]:
         """Calculate subcategory percentages from interaction history (2-level depth)."""
@@ -936,6 +963,56 @@ class RecommendationEngine:
             category_percentages[category] = (count / total_interactions) * 100
         
         return category_percentages
+    
+    def _get_item_category_2_level(self, category_code: str) -> str:
+        """Extract 2-level subcategory from a category code."""
+        if not category_code:
+            return category_code
+        
+        if '.' in category_code:
+            category_parts = category_code.split('.')
+            if len(category_parts) >= 2:
+                return f"{category_parts[0]}.{category_parts[1]}"
+            else:
+                return category_parts[0]
+        else:
+            return category_code
+    
+    def _get_diverse_exploration_items(self, user_categories: set, needed_count: int, selected_item_ids: set = None) -> List[Tuple[int, float, Dict]]:
+        """Get diverse items from categories not in user's interaction history for exploration."""
+        import random
+        
+        diverse_items = []
+        if selected_item_ids is None:
+            selected_item_ids = set()
+        
+        # Get sample of items from different categories
+        try:
+            # Filter items that are NOT in user categories
+            user_category_2_level = set()
+            for cat in user_categories:
+                user_category_2_level.add(self._get_item_category_2_level(cat))
+            
+            # Sample items from items_df that are not in user categories
+            available_items = []
+            for _, row in self.items_df.sample(min(1000, len(self.items_df))).iterrows():
+                item_category = self._get_item_category_2_level(row['category_code'])
+                item_id = int(row['product_id'])
+                if item_category not in user_category_2_level and item_id not in selected_item_ids:
+                    item_info = self._get_item_info(item_id)
+                    # Assign a base score for exploration items
+                    score = random.uniform(0.3, 0.5)  # Lower than boosted user category items
+                    available_items.append((item_id, score, item_info))
+            
+            # Randomly sample needed items for true exploration
+            if available_items:
+                sampled_items = random.sample(available_items, min(needed_count, len(available_items)))
+                diverse_items.extend(sampled_items)
+                
+        except Exception as e:
+            print(f"Error in _get_diverse_exploration_items: {e}")
+        
+        return diverse_items
     
     def _calculate_proportional_distribution(self, category_percentages: Dict[str, float], 
                                            total_target: int) -> Dict[str, int]:
@@ -972,7 +1049,6 @@ class RecommendationEngine:
         # Filter out zero allocations (no artificial minimum guarantee)
         final_allocations = {cat: count for cat, count in raw_allocations.items() if count > 0}
         
-        print(f"[DEBUG] Proportional distribution: target={total_target}, allocations={final_allocations}")
         return final_allocations
     
     def _get_item_info(self, item_id: int) -> Dict:
