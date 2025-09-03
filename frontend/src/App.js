@@ -76,6 +76,10 @@ function App() {
   const [activeCustomTab, setActiveCustomTab] = useState('real');
   const [activeDemographicsTab, setActiveDemographicsTab] = useState('random');
 
+  // Auto-update states
+  const [autoUpdateRecommendations, setAutoUpdateRecommendations] = useState(true);
+  const [backgroundLoading, setBackgroundLoading] = useState(false);
+
   // Demographics management function
   const handleProfileChange = (field, value) => {
     setUserProfile(prev => ({
@@ -102,6 +106,17 @@ function App() {
     setSelectedCategory('');
     setSelectedBehavioralPattern(null);
   }, [selectedRealUser, useRealUsers]);
+
+  // Auto-update recommendations when settings change
+  useEffect(() => {
+    if (autoUpdateRecommendations && recommendations.length > 0) {
+      const delayedUpdate = setTimeout(() => {
+        getRecommendations();
+      }, 300); // Debounce to avoid too many API calls
+      
+      return () => clearTimeout(delayedUpdate);
+    }
+  }, [recommendationType, numRecommendations, collaborativeWeight, selectedCategory, autoUpdateRecommendations]);
 
   const fetchSampleItems = async () => {
     try {
@@ -293,6 +308,13 @@ function App() {
     // Clear synthetic interactions since we're using real behavioral data
     setInteractions([]);
     setSelectedPattern(null);
+
+    // Auto-generate recommendations if enabled
+    if (autoUpdateRecommendations) {
+      setTimeout(() => {
+        getRecommendations();
+      }, 500); // Small delay to ensure state updates
+    }
   };
 
   // Clear behavioral pattern and reset to empty interactions
@@ -305,7 +327,7 @@ function App() {
   };
 
 
-  const handleRealUserSelect = (user) => {
+  const handleRealUserSelect = async (user) => {
     setSelectedRealUser(user);
     setUserProfile({
       age: user.age,
@@ -322,6 +344,25 @@ function App() {
     setSelectedPattern(null);
     setShowUserInteractions(false);
     setUserInteractionDetails(null);
+
+    // Automatically load interaction details in background
+    if (user.user_id) {
+      setBackgroundLoading(true);
+      try {
+        await fetchUserInteractionDetails(user.user_id);
+      } catch (error) {
+        console.error('Background loading failed:', error);
+      } finally {
+        setBackgroundLoading(false);
+      }
+    }
+
+    // Auto-generate recommendations if enabled
+    if (autoUpdateRecommendations) {
+      setTimeout(() => {
+        getRecommendations();
+      }, 500); // Small delay to ensure state updates
+    }
   };
 
   const fetchUserInteractionDetails = async (userId) => {
@@ -470,6 +511,13 @@ function App() {
     } else {
       // Generate realistic interactions for other patterns
       generateRealisticInteractions(pattern);
+    }
+
+    // Auto-generate recommendations if enabled
+    if (autoUpdateRecommendations) {
+      setTimeout(() => {
+        getRecommendations();
+      }, 500); // Small delay to ensure state updates
     }
   };
 
@@ -788,8 +836,12 @@ function App() {
                   className="btn btn-info expand-interactions-btn"
                   disabled={loadingInteractions}
                 >
-                  {loadingInteractions ? 'Loading...' : showUserInteractions ? 'Hide Interaction Timeline' : 'Show All Interactions Timeline'}
+                  {loadingInteractions ? 'Loading...' : showUserInteractions ? '🔽 Hide Interactions Timeline' : '🔍 Show Interactions Timeline'}
                 </button>
+                
+                {backgroundLoading && !loadingInteractions && (
+                  <span className="background-load-indicator">🔄 Interactions loaded in background</span>
+                )}
 
                 {showUserInteractions && userInteractionDetails && (
                   <div className="user-interactions-timeline">
@@ -845,95 +897,11 @@ function App() {
 
 
 
-        {/* Interaction Patterns */}
-        <div className="interaction-patterns">
-          {useRealUsers && selectedRealUser ? (
-            <>
-
-              {/* Category Analysis Columns */}
-              {(Object.keys(categoryPercentages).length > 0 || Object.keys(recommendationCategoryPercentages).length > 0) && (
-                <div className="category-analysis">
-                  <h4>Category Analysis</h4>
-                  <div className="category-columns">
-                    
-                    {/* User's Interacted Categories */}
-                    {Object.keys(categoryPercentages).length > 0 && (
-                      <div className="category-column">
-                        <h5>👁️ User's Category Interests</h5>
-                        <div className="category-percentages">
-                          {Object.entries(categoryPercentages)
-                            .sort((a, b) => parseFloat(b[1]) - parseFloat(a[1]))
-                            .slice(0, 10)
-                            .map(([category, percentage]) => (
-                              <div key={category} className="category-item">
-                                <div className="category-bar-container">
-                                  <div 
-                                    className="category-bar user-category"
-                                    style={{ width: `${Math.max(parseFloat(percentage), 5)}%` }}
-                                  ></div>
-                                </div>
-                                <span className="category-label">{category.replace('_', ' ')}</span>
-                                <span className="category-percent">{percentage}%</span>
-                              </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Recommendation Categories */}
-                    {Object.keys(recommendationCategoryPercentages).length > 0 && (
-                      <div className="category-column">
-                        <h5>🎯 Recommendation Categories</h5>
-                        <div className="category-percentages">
-                          {Object.entries(recommendationCategoryPercentages)
-                            .sort((a, b) => parseFloat(b[1]) - parseFloat(a[1]))
-                            .map(([category, percentage]) => {
-                              const userPercentage = categoryPercentages[category] || 0;
-                              const isMatch = parseFloat(userPercentage) > 0;
-                              
-                              return (
-                                <div key={category} className={`category-item ${isMatch ? 'matched' : 'new'}`}>
-                                  <div className="category-bar-container">
-                                    <div 
-                                      className={`category-bar ${isMatch ? 'rec-category-matched' : 'rec-category-new'}`}
-                                      style={{ width: `${Math.max(parseFloat(percentage), 5)}%` }}
-                                    ></div>
-                                  </div>
-                                  <span className="category-label">{category.replace('_', ' ')}</span>
-                                  <span className="category-percent">{percentage}%</span>
-                                  {isMatch && <span className="match-indicator">✓</span>}
-                                </div>
-                              );
-                            })}
-                        </div>
-                      </div>
-                    )}
-
-                  </div>
-
-                  {/* Category Match Analysis */}
-                  {Object.keys(categoryPercentages).length > 0 && Object.keys(recommendationCategoryPercentages).length > 0 && (
-                    <div className="category-match-summary">
-                      <p>
-                        <strong>Category Alignment:</strong> {
-                          Object.keys(recommendationCategoryPercentages).filter(cat => 
-                            parseFloat(categoryPercentages[cat] || 0) > 0
-                          ).length
-                        } of {Object.keys(recommendationCategoryPercentages).length} recommended categories match user interests
-                        <span className="match-legend">
-                          <span className="legend-item"><span className="legend-dot matched"></span> Matches user interest</span>
-                          <span className="legend-item"><span className="legend-dot new"></span> New category exploration</span>
-                        </span>
-                      </p>
-                    </div>
-                  )}
-                </div>
-              )}
-            </>
-          ) : (
-            <>
-              <h2>Custom User Interaction History</h2>
-              <p>Using synthetic patterns or behavioral patterns to simulate user behavior</p>
+        {/* Interaction Patterns - Only show for custom users */}
+        {!useRealUsers && (
+          <div className="interaction-patterns">
+            <h2>Custom User Interaction History</h2>
+            <p>Using synthetic patterns or behavioral patterns to simulate user behavior</p>
               
               <button 
                 onClick={() => {
@@ -1317,130 +1285,6 @@ function App() {
                   )}
                 </div>
               )}
-              
-              {/* Category Analysis for Custom Users */}
-              {(selectedBehavioralPattern || interactions.length > 0 || userProfile.interaction_history.length > 0 || (recommendations.length > 0 && selectedPattern?.isNewUser)) && (
-                <div 
-                  key={`category-analysis-${interactions.length}-${selectedBehavioralPattern?.id || 'none'}-${sampleItems.length}`}
-                  className="category-analysis"
-                >
-                  <h4>Category Analysis</h4>
-                  
-                  {/* User Interests vs Recommendations Comparison */}
-                  <div className="category-comparison">
-                    <div className="category-columns">
-                      
-                      {/* User's Interacted Categories */}
-                      <div className="category-column">
-                        <h5>👁️ User's Category Interests</h5>
-                        <div className="category-percentages">
-                          {Object.keys(categoryPercentages).length > 0 ? (
-                            Object.entries(categoryPercentages)
-                              .sort((a, b) => parseFloat(b[1]) - parseFloat(a[1]))
-                              .slice(0, 10)
-                              .map(([category, percentage]) => (
-                                <div key={category} className="category-item">
-                                  <div className="category-bar-container">
-                                    <div 
-                                      className="category-bar user-category"
-                                      style={{ width: `${Math.max(parseFloat(percentage), 5)}%` }}
-                                    ></div>
-                                  </div>
-                                  <span className="category-label">{category.replace(/\./g, ' > ')}</span>
-                                  <span className="category-percent">{percentage}%</span>
-                                </div>
-                            ))
-                          ) : selectedPattern?.isNewUser ? (
-                            <div className="new-user-category-message">
-                              <div style={{
-                                padding: '20px',
-                                backgroundColor: '#f8f9fa',
-                                border: '2px dashed #6c757d',
-                                borderRadius: '8px',
-                                textAlign: 'center',
-                                color: '#495057'
-                              }}>
-                                <h6 style={{margin: '0 0 8px 0', color: '#343a40'}}>🆕 New User - No History</h6>
-                                <p style={{margin: '0', fontSize: '14px'}}>
-                                  No category preferences yet.<br />
-                                  Recommendations are based on demographics only.
-                                </p>
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="category-loading">
-                              <p>Processing interaction categories...</p>
-                              <small>
-                                Debug: useRealUsers={String(useRealUsers)}, 
-                                behavioral={String(!!selectedBehavioralPattern)}, 
-                                interactions={interactions.length}, 
-                                sampleItems={sampleItems.length}
-                                <br />
-                                categoryPercentages keys: {Object.keys(categoryPercentages).join(', ') || 'none'}
-                                <br />
-                                Last updated: {new Date().toLocaleTimeString()}
-                                <br />
-                                {selectedBehavioralPattern && sampleItems.length === 0 && "Loading item catalog..."}
-                                {selectedBehavioralPattern && sampleItems.length > 0 && "Behavioral pattern loaded, processing categories..."}
-                                {interactions.length === 0 && !selectedBehavioralPattern && "No interactions selected yet"}
-                                {interactions.length > 0 && !selectedBehavioralPattern && "Analyzing synthetic interactions..."}
-                                {interactions.length > 0 && !selectedBehavioralPattern && sampleItems.length === 0 && " (No sample items available)"}
-                              </small>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Recommendation Categories */}
-                      {Object.keys(recommendationCategoryPercentages).length > 0 && (
-                        <div className="category-column">
-                          <h5>🎯 Recommendation Categories</h5>
-                          <div className="category-percentages">
-                            {Object.entries(recommendationCategoryPercentages)
-                              .sort((a, b) => parseFloat(b[1]) - parseFloat(a[1]))
-                              .map(([category, percentage]) => {
-                                const userPercentage = categoryPercentages[category] || 0;
-                                const isMatch = parseFloat(userPercentage) > 0;
-                                
-                                return (
-                                  <div key={category} className={`category-item ${isMatch ? 'matched' : 'new'}`}>
-                                    <div className="category-bar-container">
-                                      <div 
-                                        className={`category-bar ${isMatch ? 'rec-category-matched' : 'rec-category-new'}`}
-                                        style={{ width: `${Math.max(parseFloat(percentage), 5)}%` }}
-                                      ></div>
-                                    </div>
-                                    <span className="category-label">{category.replace(/\./g, ' > ')}</span>
-                                    <span className="category-percent">{percentage}%</span>
-                                    {isMatch && <span className="match-indicator">✓</span>}
-                                  </div>
-                                );
-                              })}
-                          </div>
-                        </div>
-                      )}
-
-                    </div>
-
-                    {/* Category Match Analysis */}
-                    {Object.keys(categoryPercentages).length > 0 && Object.keys(recommendationCategoryPercentages).length > 0 && (
-                      <div className="category-match-summary">
-                        <p>
-                          <strong>Category Alignment:</strong> {
-                            Object.keys(recommendationCategoryPercentages).filter(cat => 
-                              parseFloat(categoryPercentages[cat] || 0) > 0
-                            ).length
-                          } of {Object.keys(recommendationCategoryPercentages).length} recommended categories match user interests
-                          <span className="match-legend">
-                            <span className="legend-item"><span className="legend-dot matched"></span> Matches user interest</span>
-                            <span className="legend-item"><span className="legend-dot new"></span> New category exploration</span>
-                          </span>
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
 
               {/* Custom User Interaction Timeline - Similar to Real User Timeline */}
               {(selectedBehavioralPattern || interactions.length > 0) && (
@@ -1549,122 +1393,299 @@ function App() {
                   )}
                 </div>
               )}
-            </>
-          )}
 
-        </div>
-
-        {/* Category Selection */}
-        {availableCategories.length > 0 && (
-          <div className="category-selection">
-            <h2>Category Filter</h2>
-            <div className="category-controls">
-              <div className="form-group">
-                <label htmlFor="categorySelect">Select Category (optional):</label>
-                <select
-                  id="categorySelect"
-                  value={selectedCategory}
-                  onChange={(e) => setSelectedCategory(e.target.value)}
-                  className="category-dropdown"
-                >
-                  <option value="">All Categories</option>
-                  {availableCategories.map((category) => (
-                    <option key={category} value={category}>
-                      {category.replace(/\./g, ' > ')} {/* Replace dots with arrows for better readability */}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              {selectedCategory && (
-                <div className="selected-category-info">
-                  <span className="category-tag">Selected: {selectedCategory.replace(/\./g, ' > ')}</span>
-                  <button 
-                    className="clear-category-btn"
-                    onClick={() => setSelectedCategory('')}
-                  >
-                    Clear
-                  </button>
-                </div>
-              )}
-            </div>
-            <p className="category-help-text">
-              Select a category to get recommendations based only on items you've interacted with in that category.
-              Categories are hierarchical - selecting "electronics" includes all electronics subcategories.
-            </p>
           </div>
         )}
 
-        {/* Recommendation Controls */}
-        <div className="recommendation-controls">
-          <h2>Recommendation Settings</h2>
-          
-          <div className="controls-row">
-            <div className="form-group">
-              <label htmlFor="recType">Recommendation Type:</label>
-              <select
-                id="recType"
-                value={recommendationType}
-                onChange={(e) => setRecommendationType(e.target.value)}
-              >
-                <option value="category_boosted">📊 Category Boosted (50% from user categories) - Default</option>
-                <option value="hybrid">Hybrid (Alternative)</option>
-                <option value="collaborative">Raw Two-Tower Retrieval</option>
-                <option value="content">Content-Based</option>
-              </select>
-            </div>
+        {/* Recommendation Controls - Moved up for better UX */}
+        <div className="recommendation-controls-section">
+          <div className="recommendation-controls">
+            <h2>🎯 Recommendation Settings</h2>
             
-            <div className="form-group">
-              <label htmlFor="numRecs">Number of Recommendations:</label>
-              <select
-                id="numRecs"
-                value={numRecommendations}
-                onChange={(e) => setNumRecommendations(parseInt(e.target.value))}
-              >
-                <option value="10">10</option>
-                <option value="20">20</option>
-                <option value="50">50</option>
-                <option value="100">100 (Top Items)</option>
-                <option value="200">200 (Extended)</option>
-              </select>
-            </div>
-            
-            {recommendationType === 'hybrid' && (
-              <div className="form-group">
-                <label htmlFor="collabWeight">Collaborative Weight:</label>
+            {/* Auto-update toggle */}
+            <div className="auto-update-controls">
+              <label className="auto-update-toggle">
                 <input
-                  type="range"
-                  id="collabWeight"
-                  min="0"
-                  max="1"
-                  step="0.1"
-                  value={collaborativeWeight}
-                  onChange={(e) => setCollaborativeWeight(parseFloat(e.target.value))}
+                  type="checkbox"
+                  checked={autoUpdateRecommendations}
+                  onChange={(e) => setAutoUpdateRecommendations(e.target.checked)}
                 />
-                <span>{collaborativeWeight}</span>
+                <span className="toggle-text">Auto-generate recommendations on changes</span>
+              </label>
+              {backgroundLoading && (
+                <span className="background-loading">🔄 Loading interactions in background...</span>
+              )}
+            </div>
+            
+            <div className="controls-row">
+              <div className="form-group">
+                <label htmlFor="recType">Recommendation Type:</label>
+                <select
+                  id="recType"
+                  value={recommendationType}
+                  onChange={(e) => setRecommendationType(e.target.value)}
+                >
+                  <option value="category_boosted">📊 Category Boosted (60% user categories, 40% exploration)</option>
+                  <option value="collaborative">🤝 Raw Two-Tower Retrieval</option>
+                  <option value="hybrid">🔗 Hybrid (Alternative)</option>
+                  <option value="content">📋 Content-Based</option>
+                </select>
               </div>
+              
+              <div className="form-group">
+                <label htmlFor="numRecs">Number of Recommendations:</label>
+                <select
+                  id="numRecs"
+                  value={numRecommendations}
+                  onChange={(e) => setNumRecommendations(parseInt(e.target.value))}
+                >
+                  <option value="10">10</option>
+                  <option value="20">20</option>
+                  <option value="50">50</option>
+                  <option value="100">100 (Top Items)</option>
+                  <option value="200">200 (Extended)</option>
+                </select>
+              </div>
+              
+              {recommendationType === 'hybrid' && (
+                <div className="form-group">
+                  <label htmlFor="collabWeight">Collaborative Weight:</label>
+                  <input
+                    type="range"
+                    id="collabWeight"
+                    min="0"
+                    max="1"
+                    step="0.1"
+                    value={collaborativeWeight}
+                    onChange={(e) => setCollaborativeWeight(parseFloat(e.target.value))}
+                  />
+                  <span>{collaborativeWeight}</span>
+                </div>
+              )}
+              
+              <button
+                className="btn btn-primary"
+                onClick={getRecommendations}
+                disabled={loading || (recommendationType === 'content' && userProfile.interaction_history.length === 0)}
+              >
+                {loading ? 'Generating...' : autoUpdateRecommendations ? 'Update Recommendations' : 'Get Recommendations'}
+              </button>
+            </div>
+            
+            {recommendationType === 'content' && userProfile.interaction_history.length === 0 && (
+              <p style={{color: '#dc3545', marginTop: '10px', fontSize: '14px'}}>
+                ⚠️ Content-based recommendations require interaction history. Please select a pattern with interactions above, or choose 'Raw Two-Tower Retrieval' or 'Hybrid' for new users.
+              </p>
             )}
             
-            <button
-              className="btn btn-primary"
-              onClick={getRecommendations}
-              disabled={loading || (recommendationType === 'content' && userProfile.interaction_history.length === 0)}
-            >
-              {loading ? 'Loading...' : 'Get Recommendations'}
-            </button>
+            {recommendationType === 'category_boosted' && userProfile.interaction_history.length === 0 && (
+              <p style={{color: '#dc3545', marginTop: '10px', fontSize: '14px'}}>
+                ⚠️ Category-boosted recommendations require interaction history to analyze preferences. Please select a pattern with interactions above, or choose 'Raw Two-Tower Retrieval' for new users.
+              </p>
+            )}
           </div>
-          
-          {recommendationType === 'content' && userProfile.interaction_history.length === 0 && (
-            <p style={{color: '#dc3545', marginTop: '10px', fontSize: '14px'}}>
-              ⚠️ Content-based recommendations require interaction history. Please select a pattern with interactions above, or choose 'Raw Two-Tower Retrieval' or 'Hybrid' for new users.
-            </p>
-          )}
-          
-          {recommendationType === 'category_boosted' && userProfile.interaction_history.length === 0 && (
-            <p style={{color: '#dc3545', marginTop: '10px', fontSize: '14px'}}>
-              ⚠️ Category-boosted recommendations require interaction history to analyze preferences. Please select a pattern with interactions above, or choose 'Raw Two-Tower Retrieval' for new users.
-            </p>
+
+          {/* Category Selection - Integrated with recommendation controls */}
+          {availableCategories.length > 0 && (
+            <div className="category-selection">
+              <h3>📂 Category Filter (Optional)</h3>
+              <div className="category-controls">
+                <div className="form-group">
+                  <label htmlFor="categorySelect">Filter by category:</label>
+                  <select
+                    id="categorySelect"
+                    value={selectedCategory}
+                    onChange={(e) => setSelectedCategory(e.target.value)}
+                    className="category-dropdown"
+                  >
+                    <option value="">All Categories</option>
+                    {availableCategories.map((category) => (
+                      <option key={category} value={category}>
+                        {category.replace(/\./g, ' > ')} {/* Replace dots with arrows for better readability */}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                {selectedCategory && (
+                  <div className="selected-category-info">
+                    <span className="category-tag">Selected: {selectedCategory.replace(/\./g, ' > ')}</span>
+                    <button 
+                      className="clear-category-btn"
+                      onClick={() => setSelectedCategory('')}
+                    >
+                      Clear
+                    </button>
+                  </div>
+                )}
+              </div>
+              <p className="category-help-text">
+                Filter recommendations to specific categories from your interaction history.
+              </p>
+            </div>
           )}
         </div>
+        )}
+
+        {/* Unified Category Analysis Section - Works for both Real and Custom Users */}
+        {(Object.keys(categoryPercentages).length > 0 || Object.keys(recommendationCategoryPercentages).length > 0 || (selectedPattern?.isNewUser && recommendations.length > 0)) && (
+          <div className="prominent-category-analysis">
+            <h2>📊 Category Analysis & Recommendation Quality</h2>
+            
+            {/* User type indicator */}
+            <div className="user-type-indicator">
+              {useRealUsers && selectedRealUser ? (
+                <span className="user-type-badge real-user">
+                  👤 Real User #{selectedRealUser.user_id} - {selectedRealUser.interaction_pattern}
+                </span>
+              ) : selectedBehavioralPattern ? (
+                <span className="user-type-badge behavioral-user">
+                  🎭 Behavioral Pattern - {selectedBehavioralPattern.pattern}
+                </span>
+              ) : selectedPattern ? (
+                <span className="user-type-badge synthetic-user">
+                  🔬 Synthetic Pattern - {selectedPattern.name}
+                </span>
+              ) : (
+                <span className="user-type-badge custom-user">
+                  ⚙️ Custom Demographics
+                </span>
+              )}
+            </div>
+
+            <div className="category-comparison-container">
+              <div className="category-columns">
+                
+                {/* User's Category Interests - Universal Logic */}
+                <div className="category-column user-interests">
+                  <h3>👁️ User's Category Interests</h3>
+                  <div className="category-percentages">
+                    {Object.keys(categoryPercentages).length > 0 ? (
+                      Object.entries(categoryPercentages)
+                        .sort((a, b) => parseFloat(b[1]) - parseFloat(a[1]))
+                        .slice(0, 10)
+                        .map(([category, percentage]) => (
+                          <div key={category} className="category-item">
+                            <div className="category-bar-container">
+                              <div 
+                                className="category-bar user-category"
+                                style={{ width: `${Math.max(parseFloat(percentage), 5)}%` }}
+                              ></div>
+                            </div>
+                            <span className="category-label">{category.replace(/\./g, ' › ')}</span>
+                            <span className="category-percent">{percentage}%</span>
+                          </div>
+                      ))
+                    ) : selectedPattern?.isNewUser ? (
+                      <div className="new-user-category-message">
+                        <div className="new-user-placeholder">
+                          <h4>🆕 New User - No History</h4>
+                          <p>No category preferences yet.<br />Recommendations based on demographics only.</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="category-loading-state">
+                        <div className="loading-placeholder">
+                          <h4>📊 Analyzing Categories...</h4>
+                          <p>Select an interaction pattern or user<br />to see category breakdown.</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Recommendation Categories - Universal Logic */}
+                <div className="category-column recommendation-categories">
+                  <h3>🎯 Recommendation Categories</h3>
+                  <div className="category-percentages">
+                    {Object.keys(recommendationCategoryPercentages).length > 0 ? (
+                      Object.entries(recommendationCategoryPercentages)
+                        .sort((a, b) => parseFloat(b[1]) - parseFloat(a[1]))
+                        .map(([category, percentage]) => {
+                          const userPercentage = categoryPercentages[category] || 0;
+                          const isMatch = parseFloat(userPercentage) > 0;
+                          
+                          return (
+                            <div key={category} className={`category-item ${isMatch ? 'matched' : 'new'}`}>
+                              <div className="category-bar-container">
+                                <div 
+                                  className={`category-bar ${isMatch ? 'rec-category-matched' : 'rec-category-new'}`}
+                                  style={{ width: `${Math.max(parseFloat(percentage), 5)}%` }}
+                                ></div>
+                              </div>
+                              <span className="category-label">{category.replace(/\./g, ' › ')}</span>
+                              <span className="category-percent">{percentage}%</span>
+                              {isMatch && <span className="match-indicator">✓</span>}
+                            </div>
+                          );
+                        })
+                    ) : (
+                      <div className="recommendations-loading-state">
+                        <div className="loading-placeholder">
+                          <h4>🎯 Generate Recommendations</h4>
+                          <p>Click "Get Recommendations" or enable<br />auto-update to see category analysis.</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+              </div>
+
+              {/* Enhanced Category Match Analysis */}
+              {Object.keys(categoryPercentages).length > 0 && Object.keys(recommendationCategoryPercentages).length > 0 && (
+                <div className="category-match-summary prominent">
+                  <div className="match-stats">
+                    <div className="match-stat">
+                      <span className="stat-number">
+                        {Object.keys(recommendationCategoryPercentages).filter(cat => 
+                          parseFloat(categoryPercentages[cat] || 0) > 0
+                        ).length}
+                      </span>
+                      <span className="stat-label">Matching Categories</span>
+                    </div>
+                    <div className="match-stat">
+                      <span className="stat-number">
+                        {Object.entries(recommendationCategoryPercentages)
+                          .filter(([cat, percentage]) => parseFloat(categoryPercentages[cat] || 0) > 0)
+                          .reduce((sum, [cat, percentage]) => sum + parseFloat(percentage), 0)
+                          .toFixed(0)}%
+                      </span>
+                      <span className="stat-label">Item Alignment</span>
+                    </div>
+                    <div className="match-stat">
+                      <span className="stat-number">
+                        {Object.entries(recommendationCategoryPercentages)
+                          .filter(([cat, percentage]) => parseFloat(categoryPercentages[cat] || 0) === 0)
+                          .reduce((sum, [cat, percentage]) => sum + parseFloat(percentage), 0)
+                          .toFixed(0)}%
+                      </span>
+                      <span className="stat-label">Exploration Rate</span>
+                    </div>
+                  </div>
+                  <div className="match-legend">
+                    <span className="legend-item"><span className="legend-dot matched"></span> Matches user interest</span>
+                    <span className="legend-item"><span className="legend-dot new"></span> New category exploration</span>
+                  </div>
+                  <div className="alignment-interpretation">
+                    {(() => {
+                      // Calculate actual item alignment percentage (sum of percentages for matching categories)
+                      const itemAlignmentScore = Object.keys(recommendationCategoryPercentages).length > 0 ? 
+                        Object.entries(recommendationCategoryPercentages)
+                          .filter(([cat, percentage]) => parseFloat(categoryPercentages[cat] || 0) > 0)
+                          .reduce((sum, [cat, percentage]) => sum + parseFloat(percentage), 0) : 0;
+                      
+                      if (itemAlignmentScore >= 70) return "🟢 Excellent alignment - strong personalization";
+                      else if (itemAlignmentScore >= 50) return "🟡 Good balance of personalization and exploration";
+                      else if (itemAlignmentScore >= 30) return "🟠 Moderate alignment - high exploration factor";
+                      else if (Object.keys(categoryPercentages).length === 0) return "🔵 New user - demographic-based recommendations";
+                      else return "🔴 Low alignment - mostly exploration categories";
+                    })()}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Error Display */}
         {error && (

@@ -98,6 +98,346 @@
   color: #3498db;
 }
 
+/* Auto-update Controls */
+.auto-update-controls {
+  background: #f8f9fa;
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  border: 1px solid #dee2e6;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.auto-update-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.auto-update-toggle input[type="checkbox"] {
+  margin: 0;
+  transform: scale(1.2);
+  accent-color: #007bff;
+}
+
+.toggle-text {
+  font-weight: 500;
+  color: #495057;
+}
+
+.background-loading {
+  color: #28a745;
+  font-size: 14px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.background-load-indicator {
+  color: #28a745;
+  font-size: 12px;
+  margin-left: 10px;
+  font-weight: 500;
+}
+
+/* Prominent Category Analysis */
+.prominent-category-analysis {
+  background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+  border: 2px solid #007bff;
+  border-radius: 12px;
+  padding: 25px;
+  margin: 25px 0;
+  box-shadow: 0 4px 12px rgba(0, 123, 255, 0.1);
+}
+
+.prominent-category-analysis h2 {
+  color: #007bff;
+  margin-bottom: 20px;
+  text-align: center;
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.category-comparison-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.category-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 25px;
+  align-items: flex-start;
+}
+
+.category-column {
+  background: white;
+  border-radius: 8px;
+  padding: 20px;
+  border: 1px solid #dee2e6;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+}
+
+.category-column h3 {
+  margin-bottom: 15px;
+  font-size: 18px;
+  font-weight: 600;
+  color: #343a40;
+}
+
+.category-column.user-interests {
+  border-left: 4px solid #28a745;
+}
+
+.category-column.recommendation-categories {
+  border-left: 4px solid #007bff;
+}
+
+.new-user-placeholder {
+  text-align: center;
+  padding: 30px 20px;
+  background: #f8f9fa;
+  border: 2px dashed #6c757d;
+  border-radius: 8px;
+  color: #495057;
+}
+
+.new-user-placeholder h4 {
+  margin-bottom: 10px;
+  color: #343a40;
+}
+
+.new-user-placeholder p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+/* Category Match Summary - Prominent Version */
+.category-match-summary.prominent {
+  background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+  border: 1px solid #2196f3;
+  border-radius: 10px;
+  padding: 20px;
+  margin-top: 20px;
+}
+
+.match-stats {
+  display: flex;
+  justify-content: center;
+  gap: 30px;
+  margin-bottom: 15px;
+  flex-wrap: wrap;
+}
+
+.match-stat {
+  text-align: center;
+  padding: 10px;
+  background: rgba(255,255,255,0.8);
+  border-radius: 8px;
+  min-width: 100px;
+}
+
+.stat-number {
+  display: block;
+  font-size: 24px;
+  font-weight: bold;
+  color: #1976d2;
+}
+
+.stat-label {
+  display: block;
+  font-size: 12px;
+  color: #555;
+  text-transform: uppercase;
+  font-weight: 500;
+  margin-top: 5px;
+}
+
+.match-legend {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+}
+
+.legend-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.legend-dot.matched {
+  background: #28a745;
+}
+
+.legend-dot.new {
+  background: #ffc107;
+}
+
+/* Improved Category Labels */
+.category-label {
+  font-weight: 500;
+  color: #343a40;
+}
+
+/* Recommendation Controls Section */
+.recommendation-controls-section {
+  background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
+  border: 1px solid #dee2e6;
+  border-radius: 10px;
+  padding: 25px;
+  margin: 20px 0;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.recommendation-controls h2 {
+  color: #007bff;
+  margin-bottom: 20px;
+  font-size: 22px;
+}
+
+.category-selection h3 {
+  color: #28a745;
+  font-size: 18px;
+  margin: 20px 0 15px 0;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+  .category-columns {
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
+  
+  .match-stats {
+    gap: 15px;
+  }
+  
+  .match-stat {
+    min-width: 80px;
+  }
+  
+  .stat-number {
+    font-size: 20px;
+  }
+  
+  .auto-update-controls {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+/* User Type Indicator */
+.user-type-indicator {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.user-type-badge {
+  display: inline-block;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 500;
+  color: white;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+}
+
+.user-type-badge.real-user {
+  background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+  border: 1px solid #1e7e34;
+}
+
+.user-type-badge.behavioral-user {
+  background: linear-gradient(135deg, #6f42c1 0%, #e83e8c 100%);
+  border: 1px solid #59359a;
+}
+
+.user-type-badge.synthetic-user {
+  background: linear-gradient(135deg, #007bff 0%, #6610f2 100%);
+  border: 1px solid #0056b3;
+}
+
+.user-type-badge.custom-user {
+  background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+  border: 1px solid #545b62;
+}
+
+/* Loading States */
+.category-loading-state, .recommendations-loading-state {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 120px;
+}
+
+.loading-placeholder {
+  text-align: center;
+  padding: 20px;
+  background: #f8f9fa;
+  border: 2px dashed #dee2e6;
+  border-radius: 8px;
+  color: #6c757d;
+}
+
+.loading-placeholder h4 {
+  margin-bottom: 8px;
+  color: #495057;
+  font-size: 16px;
+}
+
+.loading-placeholder p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+/* Alignment Interpretation */
+.alignment-interpretation {
+  text-align: center;
+  margin-top: 15px;
+  padding: 10px 15px;
+  background: rgba(255,255,255,0.9);
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #495057;
+  border: 1px solid rgba(0,0,0,0.1);
+}
+
+/* Enhanced responsive design */
+@media (max-width: 768px) {
+  .user-type-badge {
+    font-size: 12px;
+    padding: 6px 12px;
+  }
+  
+  .loading-placeholder h4 {
+    font-size: 14px;
+  }
+  
+  .loading-placeholder p {
+    font-size: 12px;
+  }
+}
+
 .perf-label {
   font-size: 12px;
   color: #bdc3c7;
